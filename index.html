@@ -62,26 +62,6 @@
       30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
       40%, 60% { transform: translate3d(4px, 0, 0); }
     }
-    /* Stylizacja wektorów sylwetek partnerskich */
-    .figure-p1 {
-      fill: rgba(99, 102, 241, 0.25);
-      stroke: #818cf8;
-      stroke-width: 2.2;
-      stroke-linejoin: round;
-      stroke-linecap: round;
-    }
-    .figure-p2 {
-      fill: rgba(244, 63, 94, 0.25);
-      stroke: #fb7185;
-      stroke-width: 2.2;
-      stroke-linejoin: round;
-      stroke-linecap: round;
-    }
-    .figure-prop {
-      fill: #1e293b;
-      stroke: #475569;
-      stroke-width: 2;
-    }
   </style>
 </head>
 <body class="bg-[#0b0d14] text-slate-100 min-h-screen antialiased font-sans flex justify-center">
@@ -161,8 +141,10 @@
         </div>
 
         <div id="diceDisplay" class="bg-brand-card border border-slate-800 rounded-3xl p-6 shadow-2xl">
-          <div class="w-24 h-24 mx-auto rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-brand-accent mb-4">
-            <i data-lucide="dices" class="w-12 h-12" id="diceIcon"></i>
+          <div id="diceArtContainer" class="mb-4">
+            <div class="w-20 h-20 mx-auto rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-brand-accent">
+              <i data-lucide="dices" class="w-10 h-10"></i>
+            </div>
           </div>
           <h3 id="diceTitle" class="text-lg font-bold text-white">Kliknij poniżej</h3>
           <p id="diceDesc" class="text-xs text-slate-400 mt-1">Wylosujcie bezpieczną i dopasowaną pozycję</p>
@@ -232,6 +214,16 @@
           <input type="text" id="custHumor" placeholder="Śmieszny opis / spostrzeżenie" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
           <textarea id="custHow" placeholder="Krok po kroku: jak wykonać..." rows="2" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white"></textarea>
           <div class="flex gap-2">
+            <select id="custPoseType" class="bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs text-white flex-1">
+              <option value="spooning">Schemat: Na boku (Łyżeczka)</option>
+              <option value="missionary_cushion">Schemat: Klasyczna z poduszką</option>
+              <option value="cowgirl">Schemat: Partnerka na górze</option>
+              <option value="lotus">Schemat: Siedząca (Lotos)</option>
+              <option value="rear_kneeling">Schemat: Klęk podparty</option>
+              <option value="edge_bed">Schemat: Na krawędzi łóżka</option>
+            </select>
+          </div>
+          <div class="flex gap-2">
             <select id="custDiff" class="bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs text-white flex-1">
               <option value="Łatwy">Trudność: Łatwy</option>
               <option value="Średni">Trudność: Średni</option>
@@ -299,9 +291,371 @@
   </div>
 
   <script>
+    // ============================================================================
+    // SILNIK ANATOMICZNYCH MANEKINÓW PRZEGUBOWYCH 2D (ARTICULATED MANNEQUIN RIG)
+    // ============================================================================
+    // Rysuje pełne segmenty anatomiczne (tułów o zmiennej szerokości, uda, łydki,
+    // stopy, ramiona, przedramiona, głowę z orientacją twarzy i stawy przegubowe).
+    let showJointMarkers = true;
+
+    function dist(a, b) {
+      return Math.hypot(b[0] - a[0], b[1] - a[1]);
+    }
+
+    // Tworzy wygładzony wielokąt o zadanych promieniach na końcach (np. udo szersze u góry, węższe w kolanie, albo tułów)
+    function taperedSegment(p1, p2, r1, r2, fill, stroke) {
+      const dx = p2[0] - p1[0];
+      const dy = p2[1] - p1[1];
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+
+      const x1a = p1[0] + nx * r1, y1a = p1[1] + ny * r1;
+      const x1b = p1[0] - nx * r1, y1b = p1[1] - ny * r1;
+      const x2a = p2[0] + nx * r2, y2a = p2[1] + ny * r2;
+      const x2b = p2[0] - nx * r2, y2b = p2[1] - ny * r2;
+
+      return `
+        <g fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round">
+          <path d="M ${x1a.toFixed(1)} ${y1a.toFixed(1)} 
+                   L ${x2a.toFixed(1)} ${y2a.toFixed(1)} 
+                   A ${r2} ${r2} 0 0 1 ${x2b.toFixed(1)} ${y2b.toFixed(1)} 
+                   L ${x1b.toFixed(1)} ${y1b.toFixed(1)} 
+                   A ${r1} ${r1} 0 0 1 ${x1a.toFixed(1)} ${y1a.toFixed(1)} Z" />
+        </g>`;
+    }
+
+    // Rysuje kompletną sylwetkę manekina na podstawie współrzędnych stawów:
+    // rig = { head, lookAngle, shoulder, hip, knee, ankle, foot, elbow, wrist }
+    function drawArticulatedBody(rig, theme) {
+      const isPartner1 = theme === 'p1'; // P1 = Indygo/Niebieski, P2 = Koral/Róż
+      const fillBody = isPartner1 ? 'rgba(99, 102, 241, 0.38)' : 'rgba(244, 63, 94, 0.38)';
+      const fillLimb = isPartner1 ? 'rgba(129, 140, 248, 0.45)' : 'rgba(251, 113, 133, 0.45)';
+      const stroke = isPartner1 ? '#818cf8' : '#fb7185';
+      const jointColor = isPartner1 ? '#c7d2fe' : '#fecdd3';
+
+      const rShoulder = isPartner1 ? 11.5 : 10;
+      const rHip = isPartner1 ? 10.5 : 11.5;
+      const rKnee = 6.5;
+      const rAnkle = 4.2;
+      const rElbow = 5.2;
+      const rWrist = 3.8;
+      const rHead = isPartner1 ? 12.5 : 11.5;
+
+      // Szyja
+      const neckSvg = `<line x1="${rig.head[0]}" y1="${rig.head[1]}" x2="${rig.shoulder[0]}" y2="${rig.shoulder[1]}" stroke="${stroke}" stroke-width="6" stroke-linecap="round"/>`;
+
+      // Tułów (od barków do miednicy)
+      const torsoSvg = taperedSegment(rig.shoulder, rig.hip, rShoulder, rHip, fillBody, stroke);
+
+      // Udo i łydka + stopa
+      const thighSvg = taperedSegment(rig.hip, rig.knee, rHip * 0.88, rKnee, fillLimb, stroke);
+      const calfSvg = taperedSegment(rig.knee, rig.ankle, rKnee, rAnkle, fillLimb, stroke);
+      const footSvg = rig.foot ? taperedSegment(rig.ankle, rig.foot, rAnkle, 3, fillLimb, stroke) : '';
+
+      // Ramię i przedramię
+      const upperArmSvg = taperedSegment(rig.shoulder, rig.elbow, 6.8, rElbow, fillLimb, stroke);
+      const foreArmSvg = taperedSegment(rig.elbow, rig.wrist, rElbow, rWrist, fillLimb, stroke);
+
+      // Głowa z kierunkiem patrzenia (nos/profil)
+      const rad = (rig.lookAngle || 0) * Math.PI / 180;
+      const noseX = rig.head[0] + Math.cos(rad) * (rHead + 3.5);
+      const noseY = rig.head[1] + Math.sin(rad) * (rHead + 3.5);
+      const eyeX = rig.head[0] + Math.cos(rad - 0.25) * (rHead * 0.55);
+      const eyeY = rig.head[1] + Math.sin(rad - 0.25) * (rHead * 0.55);
+
+      const headSvg = `
+        <g>
+          <polygon points="${rig.head[0] + Math.cos(rad - 0.45)*rHead},${rig.head[1] + Math.sin(rad - 0.45)*rHead} ${noseX},${noseY} ${rig.head[0] + Math.cos(rad + 0.45)*rHead},${rig.head[1] + Math.sin(rad + 0.45)*rHead}" fill="${fillLimb}" stroke="${stroke}" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="${rig.head[0]}" cy="${rig.head[1]}" r="${rHead}" fill="${fillLimb}" stroke="${stroke}" stroke-width="2"/>
+          <circle cx="${eyeX.toFixed(1)}" cy="${eyeY.toFixed(1)}" r="1.6" fill="${jointColor}"/>
+        </g>`;
+
+      // Punkty przegubowe (stawy jak na manekinie anatomicznym)
+      const jointsSvg = showJointMarkers ? `
+        <g fill="${jointColor}" opacity="0.85">
+          <circle cx="${rig.shoulder[0]}" cy="${rig.shoulder[1]}" r="3"/>
+          <circle cx="${rig.hip[0]}" cy="${rig.hip[1]}" r="3.5"/>
+          <circle cx="${rig.knee[0]}" cy="${rig.knee[1]}" r="2.8"/>
+          <circle cx="${rig.elbow[0]}" cy="${rig.elbow[1]}" r="2.4"/>
+          <circle cx="${rig.wrist[0]}" cy="${rig.wrist[1]}" r="2.5"/>
+        </g>` : '';
+
+      return `<g>${neckSvg}${torsoSvg}${thighSvg}${calfSvg}${footSvg}${headSvg}${upperArmSvg}${foreArmSvg}${jointsSvg}</g>`;
+    }
+
+    // PRECYZYJNE KONFIGURACJE GEOMETRYCZNE DLA WSZYSTKICH 10 TYPÓW POZYCJI (WSPÓŁRZĘDNE 320x190)
+    const POSE_RIGS = {
+      spooning: {
+        label: "Leżenie boczne (Kąt kolan ~45°)",
+        props: `
+          <rect x="20" y="152" width="280" height="14" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="62" cy="144" rx="24" ry="9" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+        `,
+        contact: [148, 134],
+        p1: {
+          head: [58, 122], lookAngle: 12,
+          shoulder: [84, 128], hip: [142, 136],
+          knee: [195, 114], ankle: [242, 144], foot: [254, 135],
+          elbow: [112, 146], wrist: [152, 125]
+        },
+        p2: {
+          head: [84, 116], lookAngle: 10,
+          shoulder: [110, 124], hip: [156, 133],
+          knee: [208, 110], ankle: [255, 142], foot: [266, 133],
+          elbow: [140, 142], wrist: [175, 136]
+        }
+      },
+
+      missionary_cushion: {
+        label: "Miednica uniesiona na klinie (15-20 cm)",
+        props: `
+          <rect x="20" y="154" width="280" height="12" rx="5" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="58" cy="145" rx="22" ry="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+          <polygon points="122,154 185,154 176,128 122,144" fill="#3b4252" stroke="#94a3b8" stroke-width="1.5"/>
+        `,
+        contact: [165, 126],
+        p2: {
+          head: [60, 134], lookAngle: -55,
+          shoulder: [92, 142], hip: [155, 129],
+          knee: [142, 78], ankle: [175, 54], foot: [188, 48],
+          elbow: [118, 148], wrist: [148, 130]
+        },
+        p1: {
+          head: [120, 56], lookAngle: 65,
+          shoulder: [138, 76], hip: [174, 124],
+          knee: [228, 148], ankle: [268, 150], foot: [276, 140],
+          elbow: [114, 114], wrist: [98, 148]
+        }
+      },
+
+      bridge: {
+        label: "Mostek biodrowy i stabilny klęk",
+        props: `
+          <rect x="20" y="154" width="280" height="12" rx="5" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="55" cy="146" rx="20" ry="7" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+        `,
+        contact: [156, 110],
+        p2: {
+          head: [55, 136], lookAngle: -45,
+          shoulder: [84, 144], hip: [148, 110],
+          knee: [192, 96], ankle: [196, 148], foot: [210, 150],
+          elbow: [115, 148], wrist: [145, 148]
+        },
+        p1: {
+          head: [188, 38], lookAngle: 135,
+          shoulder: [184, 64], hip: [164, 112],
+          knee: [172, 148], ankle: [222, 150], foot: [230, 140],
+          elbow: [168, 92], wrist: [148, 108]
+        }
+      },
+
+      cowgirl: {
+        label: "Partner leżący, partnerka w pionie",
+        props: `
+          <rect x="20" y="152" width="280" height="14" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="62" cy="143" rx="24" ry="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+        `,
+        contact: [156, 134],
+        p1: {
+          head: [62, 130], lookAngle: -45,
+          shoulder: [96, 138], hip: [156, 140],
+          knee: [212, 134], ankle: [262, 144], foot: [272, 130],
+          elbow: [122, 146], wrist: [152, 132]
+        },
+        p2: {
+          head: [146, 36], lookAngle: 125,
+          shoulder: [150, 64], hip: [158, 126],
+          knee: [124, 146], ankle: [168, 148], foot: [180, 148],
+          elbow: [130, 94], wrist: [110, 128]
+        }
+      },
+
+      reverse_cowgirl: {
+        label: "Pozycja odwrócona (tyłem do twarzy)",
+        props: `
+          <rect x="20" y="152" width="280" height="14" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="62" cy="143" rx="24" ry="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+        `,
+        contact: [156, 134],
+        p1: {
+          head: [62, 130], lookAngle: -30,
+          shoulder: [96, 138], hip: [156, 140],
+          knee: [212, 130], ankle: [262, 144], foot: [272, 130],
+          elbow: [124, 145], wrist: [155, 134]
+        },
+        p2: {
+          head: [172, 38], lookAngle: 25,
+          shoulder: [166, 66], hip: [156, 126],
+          knee: [196, 146], ankle: [150, 148], foot: [138, 148],
+          elbow: [182, 96], wrist: [204, 124]
+        }
+      },
+
+      lotus: {
+        label: "Siad skrzyżny z opleceniem talii",
+        props: `
+          <rect x="40" y="152" width="240" height="14" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+        `,
+        contact: [156, 132],
+        p1: {
+          head: [134, 42], lookAngle: 15,
+          shoulder: [136, 70], hip: [144, 134],
+          knee: [192, 142], ankle: [156, 148], foot: [142, 148],
+          elbow: [154, 102], wrist: [176, 112]
+        },
+        p2: {
+          head: [174, 46], lookAngle: 165,
+          shoulder: [172, 74], hip: [162, 130],
+          knee: [122, 122], ankle: [112, 134], foot: [104, 136],
+          elbow: [152, 86], wrist: [134, 68]
+        }
+      },
+
+      jackknife: {
+        label: "Wysokie ugięcie bioder (Nogi na barkach)",
+        props: `
+          <rect x="20" y="152" width="280" height="14" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="62" cy="143" rx="22" ry="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+        `,
+        contact: [158, 132],
+        p2: {
+          head: [62, 132], lookAngle: -45,
+          shoulder: [94, 140], hip: [150, 136],
+          knee: [132, 92], ankle: [152, 54], foot: [164, 44],
+          elbow: [118, 146], wrist: [145, 136]
+        },
+        p1: {
+          head: [188, 46], lookAngle: 135,
+          shoulder: [176, 72], hip: [166, 128],
+          knee: [216, 146], ankle: [258, 148], foot: [266, 138],
+          elbow: [154, 98], wrist: [136, 88]
+        }
+      },
+
+      edge_bed: {
+        label: "Brzeg materaca + pozycja stojąca",
+        props: `
+          <rect x="18" y="108" width="142" height="58" rx="6" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+          <ellipse cx="48" cy="100" rx="20" ry="7" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+          <line x1="18" y1="166" x2="300" y2="166" stroke="#334155" stroke-width="2"/>
+        `,
+        contact: [158, 100],
+        p2: {
+          head: [48, 90], lookAngle: -45,
+          shoulder: [82, 98], hip: [148, 100],
+          knee: [146, 62], ankle: [178, 48], foot: [190, 42],
+          elbow: [108, 104], wrist: [138, 98]
+        },
+        p1: {
+          head: [196, 26], lookAngle: 150,
+          shoulder: [190, 52], hip: [168, 100],
+          knee: [176, 134], ankle: [178, 162], foot: [164, 164],
+          elbow: [174, 78], wrist: [152, 92]
+        }
+      },
+
+      rear_kneeling: {
+        label: "Klęk podparty na przedramionach",
+        props: `
+          <rect x="20" y="152" width="280" height="14" rx="6" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+          <ellipse cx="75" cy="142" rx="24" ry="9" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+        `,
+        contact: [178, 104],
+        p2: {
+          head: [78, 108], lookAngle: 35,
+          shoulder: [106, 114], hip: [168, 102],
+          knee: [158, 146], ankle: [122, 148], foot: [112, 148],
+          elbow: [96, 144], wrist: [68, 144]
+        },
+        p1: {
+          head: [212, 36], lookAngle: 145,
+          shoulder: [204, 62], hip: [186, 106],
+          knee: [196, 146], ankle: [244, 148], foot: [252, 138],
+          elbow: [186, 88], wrist: [166, 98]
+        }
+      },
+
+      countertop: {
+        label: "Wysoki blat / komoda + pozycja stojąca",
+        props: `
+          <rect x="28" y="102" width="96" height="64" rx="4" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+          <line x1="20" y1="166" x2="300" y2="166" stroke="#334155" stroke-width="2"/>
+        `,
+        contact: [128, 96],
+        p2: {
+          head: [92, 34], lookAngle: 10,
+          shoulder: [98, 60], hip: [116, 96],
+          knee: [162, 92], ankle: [154, 128], foot: [164, 132],
+          elbow: [118, 76], wrist: [148, 64]
+        },
+        p1: {
+          head: [162, 28], lookAngle: 165,
+          shoulder: [158, 54], hip: [140, 98],
+          knee: [146, 132], ankle: [148, 162], foot: [134, 164],
+          elbow: [140, 78], wrist: [118, 92]
+        }
+      }
+    };
+
+    function generateIllustration(poseType) {
+      const scene = POSE_RIGS[poseType] || POSE_RIGS.spooning;
+
+      return `
+        <div class="w-full relative">
+          <svg viewBox="0 0 320 180" class="w-full h-48 mx-auto bg-slate-950/60 rounded-2xl border border-slate-800/80">
+            <!-- Siatka inżynierska / tło pomocnicze -->
+            <defs>
+              <pattern id="anatGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(148, 163, 184, 0.06)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="320" height="180" fill="url(#anatGrid)"/>
+
+            <!-- Podłoże, poduszki, łóżko -->
+            ${scene.props}
+
+            <!-- Postać 1 (Partner - Indygo) -->
+            ${drawArticulatedBody(scene.p1, 'p1')}
+
+            <!-- Postać 2 (Partnerka - Koral/Róż) -->
+            ${drawArticulatedBody(scene.p2, 'p2')}
+
+            <!-- Punkt styku / oś miednicy -->
+            ${showJointMarkers ? `
+              <g>
+                <circle cx="${scene.contact[0]}" cy="${scene.contact[1]}" r="9" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3 2"/>
+                <circle cx="${scene.contact[0]}" cy="${scene.contact[1]}" r="3" fill="#f59e0b"/>
+              </g>
+            ` : ''}
+
+            <!-- Opis schematu -->
+            <text x="12" y="18" fill="#94a3b8" font-size="9" font-family="monospace">${scene.label}</text>
+          </svg>
+
+          <!-- Legenda i przełącznik stawów -->
+          <div class="flex items-center justify-between px-2 mt-2 text-[10px] text-slate-400">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block"></span> Partner</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block"></span> Partnerka</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Oś bioder</span>
+            </div>
+            <button onclick="toggleJoints()" class="text-[10px] text-slate-400 hover:text-white underline">
+              ${showJointMarkers ? 'Ukryj stawy' : 'Pokaż stawy'}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleJoints() {
+      showJointMarkers = !showJointMarkers;
+      renderDailyCard();
+    }
+
     // BAZA PEŁNYCH 31 POZYCJI NA KAŻDY DZIEŃ MIESIĄCA
     const POSITIONS_31 = [
-      { id: 1, name: "Leniwa Łyżeczka", level: "Łatwy", vibe: "Niedzielny Chill", humor: "Gdy pizza wygrała z ambicją, a poruszenie nogą wymaga zgody zarządu.", howTo: "Oboje leżycie na boku twarzą w tę samą stronę. Kolana lekko ugięte pod kątem 45 stopni.", benefit: "Odciąża odcinek lędźwiowy i nie obciąża kolan.", poseType: "spooning" },
+      { id: 1, name: "Leniwa Łyżeczka", level: "Łatwy", vibe: "Niedzielny Chill", humor: "Gdy pizza wygrała z ambicją, a poruszenie nogą wymaga zgody zarządu.", howTo: "Oboje leżycie na boku twarzą w tę samą stronę. Kolana ugięte pod kątem 45 stopni.", benefit: "Odciąża odcinek lędźwiowy i nie obciąża kolan.", poseType: "spooning" },
       { id: 2, name: "Klasyk z Poduszką", level: "Łatwy", vibe: "Romantyczny", humor: "Zwykły misjonarz, ale jedna poduszka robi z Ciebie inżyniera ergonomii.", howTo: "Poduszka pod miednicę partnerki unosi biodra o 15 cm. Partner opiera się na przedramionach.", benefit: "Precyzyjny kąt natarcia bez bólu karku.", poseType: "missionary_cushion" },
       { id: 3, name: "Mostek Westchnień", level: "Średni", vibe: "Głębokie Zbliżenie", humor: "Wygląda jak seria ćwiczeń z rehabilitacji, ale kąt jest rewelacyjny.", howTo: "Partnerka leży na plecach z uniesioną miednicą i stopami na materacu. Partner klęczy z prostymi plecami.", benefit: "Mocny kontakt wzrokowy i napięcie mięśni dna miednicy.", poseType: "bridge" },
       { id: 4, name: "Amazonka Chill", level: "Średni", vibe: "Pełna Kontrola", humor: "Facet leży zmęczony po całym dniu, a dziewczyna ma uprawnienia administratora prędkości.", howTo: "Partner leży swobodnie. Partnerka siada na górze i nadaje tempo ruchem bioder.", benefit: "Pełna kontrola nad stymulacją łechtaczki.", poseType: "cowgirl" },
@@ -312,196 +666,27 @@
       { id: 9, name: "Górska Przełęcz", level: "Średni", vibe: "Mocny Akcent", humor: "Stabilna pozycja, dopóki ktoś nie zapomni podłożyć miękkiego koca pod kolana.", howTo: "Partnerka w klęku podpartym na przedramionach. Partner klęczy za nią pod kątem 90 stopni.", benefit: "Naturalne wygięcie kręgosłupa i głębokie dopasowanie.", poseType: "rear_kneeling" },
       { id: 10, name: "Motyl na Blacie", level: "Średni", vibe: "Spontaniczny Chill", humor: "Kiedy kuchnia wzywa, ale lodówka może poczekać 10 minut.", howTo: "Partnerka siada na stabilnym stole lub komodzie. Partner stoi naprzeciwko, obejmując jej biodra.", benefit: "Naturalna wysokość bez schylania kręgosłupa.", poseType: "countertop" },
       { id: 11, name: "Kołyska Zmysłów", level: "Łatwy", vibe: "Czułość", humor: "Dobra na deszczowy wieczór pod ciepłą kołdrą z herbatą w zasięgu ręki.", howTo: "Leżenie naprzeciwko siebie na boku, splecione nogi i powolny ruch miednicy.", benefit: "Bardzo małe zmęczenie fizyczne i dużo przytulania.", poseType: "spooning" },
-      { id: 12, name: "Wodospad", level: "Trudny", vibe: "Elastyczność", humor: "Wymaga materaca o odpowiedniej twardości i braku zawrotów głowy.", howTo: "Partnerka leży w poprzek łóżka z głową delikatnie opadającą poza krawędź. Partner stoi przed nią.", benefit: "Nietypowa grawitacja i uczucie przyjemnego odprężenia karku.", poseType: "edge_bed" },
-      { id: 13, name: "Pół-Lotos Kanapowy", level: "Średni", vibe: "Spokojny Wieczór", humor: "Komfort lotosu, ale z podparciem oparcia kanapy dla leniwych pleców.", howTo: "Partner opiera plecy o wezgłowie łóżka. Partnerka siada na nim z jedną nogą ugiętą.", benefit: "Stabilne oparcie dla kręgosłupa partnera.", poseType: "lotus" },
-      { id: 14, name: "Fotel Prezesa", level: "Łatwy", vibe: "Komfort", humor: "Gdy w sypialni stoi ten jeden wygodny fotel, na którym zwykle leżą ubrania.", howTo: "Partner siada głęboko w fotelu. Partnerka siada na nim przodem, opierając stopy na podłodze.", benefit: "Komfortowa pozycja siedząca bez obciążania rąk.", poseType: "cowgirl" },
-      { id: 15, name: "Boczny Nożycowy", level: "Średni", vibe: "Rytm", humor: "Nogi ułożone jak nożyczki krawieckie, ale efekt zaskakująco płynny.", howTo: "Oboje leżą na bokach prostopadle do siebie, krzyżując nogi na wysokości bioder.", benefit: "Ciasne przyleganie i delikatna stymulacja punktowa.", poseType: "jackknife" },
-      { id: 16, name: "Odwrócona Łyżka", level: "Łatwy", vibe: "Relaks", humor: "Gdy oboje macie ochotę na drzemkę, ale szkoda kończyć wieczór.", howTo: "Klasyczna łyżeczka, ale z jedną nogą partnerki przerzuconą wyżej przez udo partnera.", benefit: "Łatwiejszy dostęp przy zerowym wysiłku fizycznym.", poseType: "spooning" },
-      { id: 17, name: "Wzniesienie Terenu", level: "Łatwy", vibe: "Anatomiczny Kąt", humor: "Poduszka pod biodrami – prosty inżynierski trik zmieniający wszystko.", howTo: "Partnerka leży na brzuchu z płaską poduszką pod miednicą. Partner leży na niej z wyczuciem.", benefit: "Gęste dopasowanie i minimalny ruch w lędźwiach.", poseType: "missionary_cushion" },
+      { id: 12, name: "Wodospad", level: "Trudny", vibe: "Elastyczność", humor: "Wymaga materaca o odpowiedniej twardości i braku zawrotów głowy.", howTo: "Partnerka leży przy krawędzi łóżka z uniesionymi nogami. Partner stoi stabilnie przed nią.", benefit: "Pełne odciążenie kręgosłupa leżącej osoby.", poseType: "edge_bed" },
+      { id: 13, name: "Pół-Lotos Kanapowy", level: "Średni", vibe: "Spokojny Wieczór", humor: "Komfort lotosu, ale z podparciem oparcia kanapy dla leniwych pleców.", howTo: "Partner opiera plecy o wezgłowie łóżka. Partnerka siada na nim z ugiętymi kolanami.", benefit: "Stabilne oparcie dla kręgosłupa partnera.", poseType: "lotus" },
+      { id: 14, name: "Fotel Prezesa", level: "Łatwy", vibe: "Komfort", humor: "Gdy w sypialni stoi ten jeden wygodny fotel, na którym zwykle leżą ubrania.", howTo: "Partner siada głęboko. Partnerka siada na nim przodem, kontrolując tempo.", benefit: "Komfortowa pozycja siedząca bez obciążania rąk.", poseType: "cowgirl" },
+      { id: 15, name: "Boczny Nożycowy", level: "Średni", vibe: "Rytm", humor: "Nogi ułożone wysoko jak nożyczki, ale efekt zaskakująco płynny.", howTo: "Partnerka unosi nogi wysoko na klatkę partnera, biodra uniesione.", benefit: "Ciasne przyleganie i delikatna stymulacja punktowa.", poseType: "jackknife" },
+      { id: 16, name: "Odwrócona Łyżka", level: "Łatwy", vibe: "Relaks", humor: "Gdy oboje macie ochotę na drzemkę, ale szkoda kończyć wieczór.", howTo: "Klasyczna łyżeczka z jedną nogą uniesioną dla łatwiejszego dostępu.", benefit: "Łatwiejsze dopasowanie przy zerowym wysiłku fizycznym.", poseType: "spooning" },
+      { id: 17, name: "Wzniesienie Terenu", level: "Łatwy", vibe: "Anatomiczny Kąt", humor: "Poduszka pod biodrami – prosty trik zmieniający wszystko.", howTo: "Partnerka leży z poduszką pod miednicą. Partner nadaje rytm z góry.", benefit: "Gęste dopasowanie i minimalny ruch w lędźwiach.", poseType: "missionary_cushion" },
       { id: 18, name: "Podparty Ślimak", level: "Średni", vibe: "Głęboki Dotyk", humor: "Dla tych, którzy cenią powolne tempo i brak pośpiechu.", howTo: "Partnerka leży na plecach, nogi zgięte w kolanach przy klatce. Partner podpiera się stabilnie.", benefit: "Mocny punkt nacisku na przednią ścianę.", poseType: "jackknife" },
-      { id: 19, name: "Stojący Przytuleniec", level: "Trudny", vibe: "Ekspresja", humor: "Świetnie wygląda na filmach, w realu wymaga solidnej siły w bicepsach.", howTo: "Partnerka opiera się o ścianę i oplata biodra partnera nogami. Partner asekuruje pod pośladki.", benefit: "Mocna dawka endorfin i wysokie tętno.", poseType: "countertop" },
-      { id: 20, name: "Płaska Fala", level: "Łatwy", vibe: "Spokój", humor: "Żadnych podskoków, czysta biomechanika i leniwy oddech.", howTo: "Oboje leżą całkowicie płasko na brzuchu i plecach, minimalny zakres ruchu bioder.", benefit: "Wycisza układ nerwowy i pogłębia bliskość.", poseType: "spooning" },
-      { id: 21, name: "Koń Trojański", level: "Średni", vibe: "Wspólny Rytm", humor: "Partnerka prowadzi, ale partner może pomagać ruchem ud.", howTo: "Partnerka w półprzysiadzie nad partnerem leżącym na plecach z ugiętymi kolanami.", benefit: "Praca mięśni czwórogłowych i pełna kontrola kąta.", poseType: "cowgirl" },
-      { id: 22, name: "Skośny Balans", level: "Średni", vibe: "Nowy Wymiar", humor: "Kąt 45 stopni do osi łóżka – geometria w służbie miłości.", howTo: "Ułożenie partnerów pod kątem ostrym na boku z lekkim uniesieniem jednej nogi.", benefit: "Świetna opcja przy zmęczeniu tradycyjnymi pozycjami.", poseType: "spooning" },
-      { id: 23, name: "Cichy Klęcznik", level: "Łatwy", vibe: "Luz", humor: "Spokojniejsza wersja pozycji od tyłu bez obciążania nadgarstków.", howTo: "Partnerka opiera klatkę piersiową płasko na poduszce. Partner z tyłu w niskim klęku.", benefit: "Brak napięcia w szyi i karku partnerki.", poseType: "rear_kneeling" },
-      { id: 24, name: "Zegar Słoneczny", level: "Średni", vibe: "Rotacja", humor: "Sprawdźcie czy prześcieradło nie zsunie się z materaca podczas obrotu.", howTo: "Zmiana kąta ciała podczas leżenia na boku o 15 stopni co parę minut.", benefit: "Różnorodne bodźce dotykowe bez wstawania.", poseType: "bridge" },
-      { id: 25, name: "Wysoka Wieża", level: "Trudny", vibe: "Siła", humor: "Dla par, które nie opuszczają dnia nóg na siłowni.", howTo: "Partnerka klęczy wyprostowana na partnerze leżącym na plecach, dłonie na jego klatce.", benefit: "Maksymalny pion i głębokość ruchu.", poseType: "reverse_cowgirl" },
-      { id: 26, name: "Trójkąt Bermudzki", level: "Średni", vibe: "Tajemnica", humor: "Nikt nie wie dlaczego działa tak dobrze, ale działa.", howTo: "Partnerka leży na plecach, jedna noga prosta, druga mocno zgięta w kolanie w bok.", benefit: "Asymetryczny nacisk dający unikalne odczucia.", poseType: "missionary_cushion" },
-      { id: 27, name: "Złoty Środek", level: "Łatwy", vibe: "Równowaga", humor: "Ani za szybko, ani za wolno – idealna harmonia na czwartek.", howTo: "Klasyczny misjonarz z rękami splecionymi na dłoniach partnera dla stabilizacji.", benefit: "Poczucie bezpieczeństwa i wspólny rytm serca.", poseType: "missionary_cushion" },
-      { id: 28, name: "Północ-Południe (69 wariacja)", level: "Średni", vibe: "Równoczesność", humor: "Wymaga skupienia podzielności uwagi na poziomie pilota myśliwca.", howTo: "Pozycja naprzemienna na boku z zachowaniem wygody podparcia głowy.", benefit: "Obopólna uwaga bez presji czasu.", poseType: "jackknife" },
-      { id: 29, name: "Wypoczynek Królewski", level: "Łatwy", vibe: "Czysty Relaks", humor: "Gdy jedynym ruchem jest ruch oddechu i delikatne muśnięcia dłoni.", howTo: "Leżenie na wznak z partnerem wtulonym pod pachę, powolna bliskość.", benefit: "Redukcja kortyzolu i wzrost oksytocyny.", poseType: "spooning" },
-      { id: 30, name: "Wahadło", level: "Średni", vibe: "Płynność", humor: "Ruch kołyszący zamiast posuwistego – jak na spokojnym jachcie.", howTo: "W pozycji siedzącej ruch odbywa się wahadłowo w przód i w tył z objęciem.", benefit: "Brak tarcia, skupienie na bliskości i cieple.", poseType: "lotus" },
+      { id: 19, name: "Stojący Przytuleniec", level: "Trudny", vibe: "Ekspresja", humor: "Świetnie wygląda na filmach, w realu blat pod pośladkami ratuje kręgosłup.", howTo: "Partnerka wspiera biodra o wysoką komodę i oplata talię partnera.", benefit: "Mocna dawka endorfin i wysokie tętno.", poseType: "countertop" },
+      { id: 20, name: "Płaska Fala", level: "Łatwy", vibe: "Spokój", humor: "Żadnych podskoków, czysta biomechanika i leniwy oddech.", howTo: "Oboje leżą na boku, minimalny zakres ruchu bioder.", benefit: "Wycisza układ nerwowy i pogłębia bliskość.", poseType: "spooning" },
+      { id: 21, name: "Koń Trojański", level: "Średni", vibe: "Wspólny Rytm", humor: "Partnerka prowadzi, ale partner może pomagać ruchem ud.", howTo: "Partnerka w pozycji na górze nad partnerem leżącym z ugiętymi kolanami.", benefit: "Praca mięśni czwórogłowych i pełna kontrola kąta.", poseType: "cowgirl" },
+      { id: 22, name: "Skośny Balans", level: "Średni", vibe: "Nowy Wymiar", humor: "Kąt 45 stopni do osi łóżka – geometria w służbie miłości.", howTo: "Ułożenie partnerów pod kątem ostrym na boku z lekkim uniesieniem kolan.", benefit: "Świetna opcja przy zmęczeniu tradycyjnymi pozycjami.", poseType: "spooning" },
+      { id: 23, name: "Cichy Klęcznik", level: "Łatwy", vibe: "Luz", humor: "Spokojniejsza wersja pozycji od tyłu bez obciążania nadgarstków.", howTo: "Partnerka opiera przedramiona płasko na poduszce. Partner z tyłu w klęku.", benefit: "Brak napięcia w szyi i nadgarstkach partnerki.", poseType: "rear_kneeling" },
+      { id: 24, name: "Łuk Triumfalny", level: "Średni", vibe: "Rotacja", humor: "Lekkie uniesienie bioder potrafi zdziałać więcej niż pół godziny gimnastyki.", howTo: "Partnerka wykonuje niski mostek biodrowy, opierając ciężar na barkach i stopach.", benefit: "Różnorodne bodźce dotykowe i świetny kąt.", poseType: "bridge" },
+      { id: 25, name: "Wysoka Wieża", level: "Trudny", vibe: "Siła", humor: "Dla par, które nie opuszczają dnia nóg na siłowni.", howTo: "Partnerka klęczy wyprostowana tyłem do twarzy partnera leżącego na plecach.", benefit: "Maksymalny pion i głębokość ruchu.", poseType: "reverse_cowgirl" },
+      { id: 26, name: "Trójkąt Bermudzki", level: "Średni", vibe: "Tajemnica", humor: "Nikt nie wie dlaczego działa tak dobrze, ale działa.", howTo: "Partnerka leży z uniesioną miednicą na poduszce, jedna noga wyżej na barku partnera.", benefit: "Asymetryczny nacisk dający unikalne odczucia.", poseType: "missionary_cushion" },
+      { id: 27, name: "Złoty Środek", level: "Łatwy", vibe: "Równowaga", humor: "Ani za szybko, ani za wolno – idealna harmonia na czwartek.", howTo: "Klasyczna pozycja z podparciem lędźwi i splecionymi dłońmi.", benefit: "Poczucie bezpieczeństwa i wspólny rytm serca.", poseType: "missionary_cushion" },
+      { id: 28, name: "Głęboki Skłon", level: "Średni", vibe: "Równoczesność", humor: "Wymaga rozciągniętych mięśni dwugłowych uda.", howTo: "Partnerka unosi nogi pionowo w górę, partner klęczy stabilnie podtrzymując jej łydki.", benefit: "Pełna kontrola głębokości.", poseType: "jackknife" },
+      { id: 29, name: "Wypoczynek Królewski", level: "Łatwy", vibe: "Czysty Relaks", humor: "Gdy jedynym ruchem jest ruch oddechu i delikatne muśnięcia dłoni.", howTo: "Leżenie boczne w pełnym objęciu, z poduszką między kolanami.", benefit: "Redukcja kortyzolu i wzrost oksytocyny.", poseType: "spooning" },
+      { id: 30, name: "Wahadło", level: "Średni", vibe: "Płynność", humor: "Ruch kołyszący zamiast posuwistego – jak na spokojnym jachcie.", howTo: "W pozycji siedzącej (Lotos) ruch odbywa się wahadłowo w przód i w tył z objęciem.", benefit: "Brak tarcia, skupienie na bliskości i cieple.", poseType: "lotus" },
       { id: 31, name: "Finał Miesiąca (Wielki Chill)", level: "Łatwy", vibe: "Celebracja", humor: "Przetrwaliście cały miesiąc testów – teraz czas na wspólne lody w łóżku.", howTo: "Wybierzcie tę, która w tym miesiącu sprawiła Wam najwięcej frajdy i uśmiechu.", benefit: "Świetna relacja, zero wstydu i pełne zrozumienie własnych ciał.", poseType: "spooning" }
     ];
-
-    // SILNIK ILUSTRACJI SYLWETKOWYCH (ZERO PATYCZAKÓW - ELEGANCKIE ANATOMICZNE WEKTORY)
-    function generateIllustration(poseType) {
-      switch (poseType) {
-        case 'spooning':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2" stroke-dasharray="4 4"/>
-              <g class="figure-p2">
-                <circle cx="80" cy="65" r="12"/>
-                <path d="M80 77 C90 85, 105 88, 140 88 C160 88, 175 105, 195 105 C185 115, 155 105, 135 105 C110 105, 95 95, 80 88 Z"/>
-                <path d="M100 85 C115 95, 140 98, 160 92" fill="none"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="55" cy="55" r="13"/>
-                <path d="M55 68 C70 78, 90 80, 125 80 C150 80, 165 98, 185 98 C175 108, 145 96, 120 96 C95 96, 75 86, 55 78 Z"/>
-                <path d="M75 75 C95 85, 125 88, 145 75" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'missionary_cushion':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <polygon points="110,118 165,118 165,95 110,110" class="figure-prop"/>
-              <g class="figure-p2">
-                <circle cx="60" cy="100" r="12"/>
-                <path d="M72 104 C95 104, 115 102, 145 92 C165 85, 180 70, 195 55 C200 65, 185 85, 165 98 C135 115, 100 115, 72 112 Z"/>
-                <path d="M145 92 Q175 60 190 50" fill="none"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="105" cy="45" r="13"/>
-                <path d="M105 58 C120 70, 135 80, 150 90 C140 105, 130 118, 115 118 C125 108, 128 95, 115 85 C100 75, 95 65, 105 58 Z"/>
-                <path d="M98 62 L85 95 L95 118" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'bridge':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
-              <g class="figure-p2">
-                <circle cx="50" cy="105" r="12"/>
-                <path d="M62 108 Q105 60 150 78 C160 90, 165 105, 170 120 C160 120, 155 105, 145 92 Q105 82, 62 115 Z"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="185" cy="45" r="13"/>
-                <path d="M185 58 C175 75, 165 90, 155 100 C165 112, 180 120, 195 120 C185 112, 180 95, 185 75 Z"/>
-                <path d="M175 65 L150 82" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'cowgirl':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
-              <g class="figure-p1">
-                <circle cx="55" cy="105" r="13"/>
-                <path d="M68 110 L195 110 C190 118, 70 118, 68 110 Z"/>
-              </g>
-              <g class="figure-p2">
-                <circle cx="130" cy="35" r="12"/>
-                <path d="M130 47 C138 65, 140 85, 135 105 C125 110, 115 115, 105 115 C118 105, 122 85, 118 65 Z"/>
-                <path d="M135 95 C145 105, 155 115, 160 118" fill="none"/>
-                <path d="M125 55 L105 85" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'lotus':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M40 122 L220 122" stroke="#334155" stroke-width="2"/>
-              <g class="figure-p1">
-                <circle cx="115" cy="40" r="13"/>
-                <path d="M115 53 C110 75, 108 95, 100 115 C115 120, 145 120, 155 115 C140 100, 135 75, 128 53 Z"/>
-                <path d="M115 70 L90 90 L130 115" fill="none"/>
-              </g>
-              <g class="figure-p2">
-                <circle cx="138" cy="42" r="12"/>
-                <path d="M138 54 C132 75, 125 95, 120 112 C132 115, 150 110, 158 100 C152 85, 150 68, 148 54 Z"/>
-                <path d="M135 65 L115 55" fill="none"/>
-                <path d="M125 90 C105 92, 95 85, 88 80" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'jackknife':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
-              <g class="figure-p2">
-                <circle cx="65" cy="105" r="12"/>
-                <path d="M77 108 L125 108 C130 95, 120 60, 110 40 C100 45, 110 75, 115 95 Z"/>
-                <path d="M125 105 Q120 65 105 45" fill="none"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="165" cy="45" r="13"/>
-                <path d="M165 58 C150 75, 140 92, 130 105 C145 115, 160 118, 175 118 C165 105, 170 85, 178 58 Z"/>
-                <path d="M155 65 L115 80" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'edge_bed':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <rect x="20" y="80" width="120" height="40" class="figure-prop"/>
-              <g class="figure-p2">
-                <circle cx="50" cy="65" r="12"/>
-                <path d="M62 70 L135 70 C140 85, 145 95, 150 110 C142 110, 132 95, 128 80 Z"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="175" cy="35" r="13"/>
-                <path d="M175 48 C168 68, 162 88, 155 105 L155 120 C165 120, 175 105, 185 70 Z"/>
-                <path d="M165 55 L135 70" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'reverse_cowgirl':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
-              <g class="figure-p1">
-                <circle cx="55" cy="105" r="13"/>
-                <path d="M68 110 L195 110 C190 118, 70 118, 68 110 Z"/>
-              </g>
-              <g class="figure-p2">
-                <circle cx="150" cy="40" r="12"/>
-                <path d="M150 52 C142 70, 138 90, 135 105 C125 105, 120 95, 125 80 C130 65, 135 55, 142 52 Z"/>
-                <path d="M145 60 L170 85" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'rear_kneeling':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
-              <g class="figure-p2">
-                <circle cx="65" cy="75" r="12"/>
-                <path d="M75 80 L120 70 L135 118 C125 118, 115 105, 110 95 L85 95 L80 118" fill="none"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="165" cy="45" r="13"/>
-                <path d="M165 58 C155 75, 145 90, 135 105 L145 118 C155 118, 165 105, 175 80 Z"/>
-                <path d="M155 65 L125 75" fill="none"/>
-              </g>
-            </svg>`;
-
-        case 'countertop':
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <rect x="30" y="75" width="80" height="45" class="figure-prop"/>
-              <g class="figure-p2">
-                <circle cx="70" cy="45" r="12"/>
-                <path d="M70 57 L75 75 L95 75 L105 105" fill="none"/>
-              </g>
-              <g class="figure-p1">
-                <circle cx="130" cy="35" r="13"/>
-                <path d="M130 48 L125 80 L125 120" fill="none"/>
-                <path d="M125 55 L85 65" fill="none"/>
-              </g>
-            </svg>`;
-
-        default:
-          return `
-            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
-              <circle cx="95" cy="65" r="16" class="figure-p1"/>
-              <circle cx="165" cy="65" r="16" class="figure-p2"/>
-              <path d="M95 85 Q130 115 165 85" stroke="#818cf8" stroke-width="3" fill="none"/>
-            </svg>`;
-      }
-    }
 
     let currentDateOffset = 0;
     let activeFilter = 'all';
@@ -542,7 +727,6 @@
       const allPos = getAllPositions();
       const baseDate = new Date();
       baseDate.setDate(baseDate.getDate() + offset);
-      // Pobieramy pozycję bezpośrednio odpowiadającą dniowi miesiąca (1 do 31)
       const dayOfMonth = baseDate.getDate();
       const index = (dayOfMonth - 1) % allPos.length;
       return allPos[index];
@@ -556,15 +740,16 @@
       const isFav = checkIfFavorite(pos.id);
 
       container.innerHTML = `
-        <div class="relative p-6 bg-gradient-to-b from-slate-900/60 to-brand-card">
-          <div class="flex items-center justify-between mb-2">
+        <div class="relative p-5 bg-gradient-to-b from-slate-900/60 to-brand-card">
+          <div class="flex items-center justify-between mb-3">
             <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase tracking-wider">${pos.level} • Poz. #${pos.id}</span>
             <button onclick="toggleFavorite(${pos.id})" class="p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition">
               <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'fill-brand-accent text-brand-accent' : 'text-slate-400'}"></i>
             </button>
           </div>
 
-          <div class="py-2 flex items-center justify-center">
+          <!-- Rycina manekinów przegubowych -->
+          <div class="py-1">
             ${generateIllustration(pos.poseType)}
           </div>
 
@@ -665,9 +850,9 @@
       document.getElementById('currentCardDate').innerText = "Podgląd pozycji #" + pos.id;
       const container = document.getElementById('dailyCardContainer');
       container.innerHTML = `
-        <div class="p-6 bg-gradient-to-b from-slate-900/60 to-brand-card">
+        <div class="p-5 bg-gradient-to-b from-slate-900/60 to-brand-card">
           <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase">${pos.level} • Poz. #${pos.id}</span>
-          <div class="py-2 flex items-center justify-center">${generateIllustration(pos.poseType)}</div>
+          <div class="py-2">${generateIllustration(pos.poseType)}</div>
           <div class="text-center mt-3">
             <h3 class="text-xl font-bold text-white">${pos.name}</h3>
             <p class="text-xs text-brand-accent mt-0.5">${pos.vibe || ''}</p>
@@ -689,8 +874,9 @@
         box.classList.remove('shake-anim');
         const allPos = getAllPositions();
         const rand = allPos[Math.floor(Math.random() * allPos.length)];
+        document.getElementById('diceArtContainer').innerHTML = generateIllustration(rand.poseType);
         document.getElementById('diceTitle').innerText = rand.name;
-        document.getElementById('diceDesc').innerText = `${rand.level} • Dzień ${rand.id}: ${rand.humor}`;
+        document.getElementById('diceDesc').innerText = `${rand.level} • ${rand.howTo}`;
       }, 450);
     }
 
@@ -703,6 +889,7 @@
       const humor = document.getElementById('custHumor').value.trim();
       const howTo = document.getElementById('custHow').value.trim();
       const level = document.getElementById('custDiff').value;
+      const poseType = document.getElementById('custPoseType').value;
 
       if (!name || !howTo) {
         alert("Wpisz przynajmniej nazwę i sposób wykonania!");
@@ -717,7 +904,7 @@
         howTo,
         level,
         vibe: "Autorska",
-        poseType: "spooning"
+        poseType
       });
       localStorage.setItem('kama_custom_positions', JSON.stringify(custom));
 
