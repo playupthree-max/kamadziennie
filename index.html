@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>KamaDziennie - Odkrywaj Bliskość</title>
+  
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KamaDziennie">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236366f1'/><path d='M50 32 C35 15, 15 32, 50 72 C85 32, 65 15, 50 32 Z' fill='%23ffffff'/></svg>">
+
+  <!-- Tailwind CSS CDN & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              dark: '#0f111a',
+              card: '#181b26',
+              accent: '#f43f5e'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Wsparcie dla notch / dynamic island i paska domowego iOS */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .pb-safe {
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    .ios-glass {
+      background: rgba(24, 27, 38, 0.78);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .shake-anim {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+  </style>
+</head>
+<body class="bg-[#0b0d14] text-slate-100 min-h-screen antialiased font-sans flex justify-center">
+
+  <div class="w-full max-w-md min-h-screen flex flex-col relative pb-safe border-x border-slate-800/40">
+    
+    <!-- Top Header -->
+    <header class="sticky top-0 z-40 ios-glass border-b border-slate-800/80 px-5 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-500 to-brand-accent flex items-center justify-center shadow-lg shadow-brand-500/30">
+          <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+            KamaDziennie <span class="text-[10px] bg-brand-500/20 text-brand-500 px-1.5 py-0.5 rounded-full font-mono uppercase">Edu</span>
+          </h1>
+          <p id="todayDateStr" class="text-[11px] text-slate-400 font-medium capitalize"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="openInstallModal()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-1">
+          <i data-lucide="share" class="w-3.5 h-3.5 text-brand-accent"></i>
+          <span>iOS</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Tabs -->
+    <main class="flex-1 px-4 py-4 overflow-y-auto hide-scrollbar">
+      
+      <!-- TAB 1: DZIEŃ -->
+      <section id="tab-daily" class="space-y-4">
+        <!-- Date Selector Navigation -->
+        <div class="flex items-center justify-between bg-brand-card/70 border border-slate-800/80 rounded-2xl p-2 px-3 text-xs text-slate-400">
+          <button onclick="shiftDate(-1)" class="p-1.5 hover:text-white active:scale-90 transition rounded-lg">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <span id="currentCardDate" class="font-medium text-slate-200">Dzisiaj</span>
+          <button onclick="shiftDate(1)" class="p-1.5 hover:text-white active:scale-90 transition rounded-lg">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Position Card -->
+        <div id="dailyCardContainer" class="bg-brand-card border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl relative">
+          <!-- Wstrzykiwane przez JS -->
+        </div>
+
+        <!-- Quick Tips Mini-Banner -->
+        <div class="bg-gradient-to-r from-brand-card to-slate-900 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-semibold text-white">Zasada nr 1: Komunikacja</h4>
+            <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">Żadna pozycja nie daje frajdy bez zgody, luzu i bezpiecznego słowa.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: KATALOG -->
+      <section id="tab-catalog" class="space-y-4 hidden">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="searchInput" oninput="renderCatalog()" placeholder="Szukaj (np. łyżeczki, łatwa, relaks)..." class="w-full bg-brand-card border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+        </div>
+
+        <!-- Filter Badges -->
+        <div class="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar" id="catalogFilters">
+          <button onclick="setFilter('all')" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-medium border bg-brand-500 border-brand-500 text-white">Wszystkie</button>
+          <button onclick="setFilter('Łatwy')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Łatwe</button>
+          <button onclick="setFilter('Średni')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Średnie</button>
+          <button onclick="setFilter('Trudny')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Akrobacja</button>
+        </div>
+
+        <!-- Catalog Grid -->
+        <div id="catalogGrid" class="grid grid-cols-1 gap-3">
+          <!-- Wstrzykiwane przez JS -->
+        </div>
+      </section>
+
+      <!-- TAB 3: KOSTKA (RANDOMIZER) -->
+      <section id="tab-dice" class="space-y-5 hidden text-center py-6">
+        <div>
+          <span class="text-xs font-mono uppercase tracking-widest text-brand-accent bg-brand-accent/10 px-2.5 py-1 rounded-full">Spontaniczność</span>
+          <h2 class="text-xl font-bold text-white mt-2">Kostka Przeznaczenia</h2>
+          <p class="text-xs text-slate-400 max-w-xs mx-auto mt-1">Brak pomysłu na wieczór? Kliknij i niech los zdecyduje za Was.</p>
+        </div>
+
+        <div id="diceDisplay" class="bg-brand-card border border-slate-800 rounded-3xl p-6 shadow-2xl transition-all">
+          <div class="w-24 h-24 mx-auto rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-brand-accent mb-4">
+            <i data-lucide="dices" class="w-12 h-12" id="diceIcon"></i>
+          </div>
+          <h3 id="diceTitle" class="text-lg font-bold text-white">Kliknij poniżej</h3>
+          <p id="diceDesc" class="text-xs text-slate-400 mt-1">Wylosujcie bezpieczną i dopasowaną pozycję</p>
+        </div>
+
+        <button onclick="rollTheDice()" class="w-full py-3.5 bg-gradient-to-r from-brand-500 to-brand-accent text-white font-semibold rounded-2xl shadow-lg shadow-brand-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+          <i data-lucide="shuffle" class="w-4 h-4"></i>
+          <span>Rzuć kostką</span>
+        </button>
+      </section>
+
+      <!-- TAB 4: EDUKACJA -->
+      <section id="tab-edu" class="space-y-4 hidden">
+        <div>
+          <h2 class="text-lg font-bold text-white">Strefa Świadomości</h2>
+          <p class="text-xs text-slate-400">Edukacja intymna bez wstydu, oparta na faktach i szacunku.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="bg-brand-card border border-slate-800 p-4 rounded-2xl">
+            <div class="flex items-center gap-2.5 text-brand-500 font-semibold text-sm">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <h3>Świadoma zgoda (Enthusiastic Consent)</h3>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+              Tylko szczere, obustronne "tak" oznacza zgodę. Cisza, niepewność czy wahanie to nie przyzwolenie. Zgodę można cofnąć w dosłownie każdej sekundzie i nie ma w tym nic złego.
+            </p>
+          </div>
+
+          <div class="bg-brand-card border border-slate-800 p-4 rounded-2xl">
+            <div class="flex items-center gap-2.5 text-brand-accent font-semibold text-sm">
+              <i data-lucide="heart" class="w-4 h-4"></i>
+              <h3>Porno to fikcja filmowa</h3>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+              Filmy dla dorosłych są reżyserowane pod kątem kamery, a nie realnej wygody partnerów. W prawdziwym życiu liczy się intymność, gra wstępna, bliskość i brak presji na nierealistyczne standardy.
+            </p>
+          </div>
+
+          <div class="bg-brand-card border border-slate-800 p-4 rounded-2xl">
+            <div class="flex items-center gap-2.5 text-emerald-400 font-semibold text-sm">
+              <i data-lucide="activity" class="w-4 h-4"></i>
+              <h3>Ergonomia i kręgosłup</h3>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+              Intymność to ruch. Poduszka pod biodra lub lędźwie potrafi diametralnie zmienić kąt i odciążyć stawy. Jeśli coś boli – nie ciśnij na siłę, zmień pozycję.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: WŁASNE / EDYTOR -->
+      <section id="tab-custom" class="space-y-4 hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white">Twoje Pozycje</h2>
+            <p class="text-xs text-slate-400">Dodajcie własne warianty i pomysły.</p>
+          </div>
+          <button onclick="toggleCustomForm()" class="text-xs bg-brand-500 text-white px-3 py-2 rounded-xl flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Dodaj</span>
+          </button>
+        </div>
+
+        <!-- Add Form -->
+        <div id="customFormContainer" class="hidden bg-brand-card border border-slate-800 p-4 rounded-2xl space-y-3">
+          <input type="text" id="custName" placeholder="Nazwa pozycji (np. Miękki Koc)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
+          <input type="text" id="custHumor" placeholder="Śmieszny opis / tekst z życia wzięty" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
+          <textarea id="custHow" placeholder="Jak poprawnie wykonać krok po kroku..." rows="2" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+          <div class="flex gap-2">
+            <select id="custDiff" class="bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs text-white flex-1">
+              <option value="Łatwy">Trudność: Łatwy</option>
+              <option value="Średni">Trudność: Średni</option>
+              <option value="Trudny">Trudność: Akrobacja</option>
+            </select>
+            <button onclick="saveCustomPosition()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium">Zapisz</button>
+          </div>
+        </div>
+
+        <!-- Custom List -->
+        <div id="customPositionsList" class="space-y-2.5">
+          <!-- Wstrzykiwane przez JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation (iOS TabBar) -->
+    <nav class="fixed bottom-0 w-full max-w-md ios-glass border-t border-slate-800/80 z-40 px-2 py-2">
+      <div class="flex justify-around items-center">
+        <button onclick="switchTab('daily')" id="btn-tab-daily" class="nav-tab active flex flex-col items-center gap-1 text-brand-500">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Dzień</span>
+        </button>
+        <button onclick="switchTab('catalog')" id="btn-tab-catalog" class="nav-tab flex flex-col items-center gap-1 text-slate-400">
+          <i data-lucide="grid" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Katalog</span>
+        </button>
+        <button onclick="switchTab('dice')" id="btn-tab-dice" class="nav-tab flex flex-col items-center gap-1 text-slate-400">
+          <i data-lucide="dices" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Losuj</span>
+        </button>
+        <button onclick="switchTab('edu')" id="btn-tab-edu" class="nav-tab flex flex-col items-center gap-1 text-slate-400">
+          <i data-lucide="book-open" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Edukacja</span>
+        </button>
+        <button onclick="switchTab('custom')" id="btn-tab-custom" class="nav-tab flex flex-col items-center gap-1 text-slate-400">
+          <i data-lucide="edit-3" class="w-5 h-5"></i>
+          <span class="text-[10px] font-medium">Własne</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- iOS Add to Home Screen Modal -->
+    <div id="iosInstallModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center p-4">
+      <div class="bg-brand-card border border-slate-800 rounded-3xl p-5 max-w-sm w-full space-y-4 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-500 mx-auto flex items-center justify-center">
+          <i data-lucide="smartphone" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Zainstaluj jako apkę na iOS</h3>
+          <p class="text-xs text-slate-400 mt-1">Używaj jak aplikacji z App Store w pełnym oknie.</p>
+        </div>
+        <div class="bg-slate-900/90 rounded-2xl p-3 text-left space-y-2 text-xs text-slate-300 border border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">1</span>
+            <span>W Safari dotknij ikony <b>Udostępnij</b> na dolnym pasku.</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">2</span>
+            <span>Wybierz <b>Do ekranu początkowego</b>.</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">3</span>
+            <span>Dotknij <b>Dodaj</b> w prawym górnym rogu.</span>
+          </div>
+        </div>
+        <button onclick="closeInstallModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold">Rozumiem</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // BAZA POZYCJI (Elegancka linia, edukacja, subtelne grafiki SVG)
+    const POSITIONS = [
+      {
+        id: 1,
+        name: "Leniwa Łyżeczka",
+        level: "Łatwy",
+        vibe: "Niedzielny Chill",
+        humor: "Dla tych, którzy chcą być blisko, ale zjedli za dużo pizzy i poruszenie nogą wymaga zgody zarządu.",
+        howTo: "Oboje leżycie na tym samym boku, tyłem do partnera. Warto podłożyć poduszkę pod głowę i lekko ugiąć kolana, by odciążyć dolny odcinek pleców.",
+        benefit: "Maksymalny kontakt skórą do skóry, wolne tempo i zerowy wysiłek kardio.",
+        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
+                <circle cx="50" cy="50" r="10" class="stroke-brand-accent"/>
+                <path d="M50 60 C55 75, 70 80, 110 80 C130 80, 145 90, 160 90"/>
+                <circle cx="70" cy="45" r="10"/>
+                <path d="M70 55 C75 70, 90 75, 125 75 C145 75, 155 85, 175 85"/>
+              </svg>`
+      },
+      {
+        id: 2,
+        name: "Klasyk z Poduszką (Pro-Tip)",
+        level: "Łatwy",
+        vibe: "Romantyczny",
+        humor: "Niby zwyczajna misjonarska, ale jedna poduszka sprawia, że czujesz się jak inżynier ergonomii lędźwiowej.",
+        howTo: "Jedna osoba leży na plecach z poduszką wsuniętą pod biodra/miednicę. Druga podpiera się stabilnie na przedramionach, nie opierając całego ciężaru ciała.",
+        benefit: "Lepszy kąt nachylenia, głębsza stymulacja i brak niepotrzebnego napięcia w karku.",
+        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
+                <rect x="70" y="85" width="45" height="12" rx="4" class="fill-slate-800 stroke-slate-700"/>
+                <circle cx="45" cy="80" r="10" class="stroke-brand-accent"/>
+                <path d="M55 80 L90 85 L140 85"/>
+                <circle cx="65" cy="40" r="10"/>
+                <path d="M65 50 L95 65 L125 80"/>
+              </svg>`
+      },
+      {
+        id: 3,
+        name: "Mostek Westchnień",
+        level: "Średni",
+        vibe: "Głębokie Zbliżenie",
+        humor: "Wygląda jak ćwiczenie z fizjoterapii na wzmocnienie pośladków, ale działa zaskakująco dobrze.",
+        howTo: "Osoba na plecach unosi miednicę opierając stopy na materacu lub udach partnera. Druga osoba klęczy i zachowuje stabilną pionową sylwetkę.",
+        benefit: "Świetna kontrola tempa i głęboki kontakt wzrokowy.",
+        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
+                <circle cx="40" cy="80" r="10" class="stroke-brand-accent"/>
+                <path d="M50 82 Q80 50 110 85 L125 85"/>
+                <circle cx="120" cy="40" r="10"/>
+                <path d="M120 50 L115 75 L110 90"/>
+              </svg>`
+      },
+      {
+        id: 4,
+        name: "Lotos na Spokojnie",
+        level: "Trudny",
+        vibe: "Pełna Bliskość",
+        humor: "Wymaga stawów kolanowych, które nie pamiętają jeszcze upadków na deskorolce w 2012 roku.",
+        howTo: "Jedna osoba siada w siadzie skrzyżnym. Druga siada na jej udach, obejmując ją nogami i ramionami za szyję. Ruch polega na delikatnym kołysaniu, nie dynamicznym tarciu.",
+        benefit: "Niezrównana intymność – usta przy ustach, wspólny oddech i synchronizacja.",
+        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
+                <circle cx="90" cy="35" r="10" class="stroke-brand-accent"/>
+                <path d="M90 45 L90 75 L70 90 L115 90"/>
+                <circle cx="110" cy="38" r="10"/>
+                <path d="M110 48 L105 75 L125 90 L85 90"/>
+              </svg>`
+      },
+      {
+        id: 5,
+        name: "Amazonka w Tempie Chill",
+        level: "Średni",
+        vibe: "Kontrola i Luz",
+        humor: "Idealna opcja, gdy facet chce odpocząć, a partnerka ma pełną władzę nad prędkością i kątem natarcia.",
+        howTo: "Partner leży swobodnie na plecach. Partnerka siada na górze, opierając stopy płasko na łóżku lub klęcząc. Ważne: to ona dyktuje głębokość i prędkość.",
+        benefit: "Kobieta ma pełną kontrolę nad stymulacją łechtaczki i kątem penetracji.",
+        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
+                <circle cx="45" cy="85" r="10"/>
+                <path d="M55 85 L145 85"/>
+                <circle cx="95" cy="35" r="10" class="stroke-brand-accent"/>
+                <path d="M95 45 L95 75 L80 90 M95 75 L115 90"/>
+              </svg>`
+      }
+    ];
+
+    let currentDateOffset = 0;
+    let activeFilter = 'all';
+
+    // Inicjalizacja
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      updateDateDisplay();
+      renderDailyCard();
+      renderCatalog();
+      renderCustomPositions();
+      registerServiceWorker();
+    });
+
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+    }
+
+    function updateDateDisplay() {
+      const now = new Date();
+      now.setDate(now.getDate() + currentDateOffset);
+      const options = { weekday: 'long', day: 'numeric', month: 'long' };
+      document.getElementById('todayDateStr').innerText = now.toLocaleDateString('pl-PL', options);
+      
+      const label = currentDateOffset === 0 ? "Dzisiaj" : (currentDateOffset === 1 ? "Jutro" : (currentDateOffset === -1 ? "Wczoraj" : now.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })));
+      document.getElementById('currentCardDate').innerText = label;
+    }
+
+    function shiftDate(offset) {
+      currentDateOffset += offset;
+      updateDateDisplay();
+      renderDailyCard();
+    }
+
+    function getPositionForDay(offset) {
+      const allPos = getAllPositions();
+      const baseDate = new Date();
+      baseDate.setDate(baseDate.getDate() + offset);
+      // Stabilny hash dnia
+      const dayHash = Math.abs(Math.sin(baseDate.getFullYear() * 1000 + (baseDate.getMonth() + 1) * 31 + baseDate.getDate()));
+      const index = Math.floor(dayHash * allPos.length) % allPos.length;
+      return allPos[index];
+    }
+
+    function getAllPositions() {
+      const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
+      return [...POSITIONS, ...custom];
+    }
+
+    function renderDailyCard() {
+      const pos = getPositionForDay(currentDateOffset);
+      const container = document.getElementById('dailyCardContainer');
+      const isFav = checkIfFavorite(pos.id);
+
+      container.innerHTML = `
+        <div class="relative p-6 bg-gradient-to-b from-slate-900/60 to-brand-card">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase tracking-wider">${pos.level}</span>
+            <button onclick="toggleFavorite(${pos.id})" class="p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition">
+              <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'fill-brand-accent text-brand-accent' : 'text-slate-400'}"></i>
+            </button>
+          </div>
+
+          <!-- Grafika Line Art -->
+          <div class="py-2 flex items-center justify-center">
+            ${pos.art || defaultArt()}
+          </div>
+
+          <div class="text-center mt-3">
+            <h3 class="text-xl font-bold text-white tracking-tight">${pos.name}</h3>
+            <p class="text-xs text-brand-accent font-medium mt-0.5">${pos.vibe || 'Bliskość & Relaks'}</p>
+          </div>
+        </div>
+
+        <div class="p-5 space-y-4 bg-brand-card border-t border-slate-800/80">
+          <div>
+            <h4 class="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5 font-bold">
+              <i data-lucide="smile" class="w-3.5 h-3.5 text-amber-400"></i> Okiem z przymrużeniem oka:
+            </h4>
+            <p class="text-xs text-slate-200 mt-1.5 leading-relaxed bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+              ${pos.humor}
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5 font-bold">
+              <i data-lucide="compass" class="w-3.5 h-3.5 text-brand-500"></i> Jak wykonać (Krok po kroku):
+            </h4>
+            <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+              ${pos.howTo}
+            </p>
+          </div>
+
+          <div class="bg-brand-500/10 border border-brand-500/20 p-3 rounded-xl">
+            <p class="text-[11px] text-brand-500 font-semibold flex items-center gap-1.5">
+              <i data-lucide="award" class="w-3.5 h-3.5"></i> Dlaczego warto:
+            </p>
+            <p class="text-xs text-slate-300 mt-0.5">${pos.benefit || 'Wspiera wzajemne zaufanie i odprężenie.'}</p>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function defaultArt() {
+      return `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round mx-auto">
+        <circle cx="70" cy="50" r="12" class="stroke-brand-accent"/>
+        <path d="M70 65 Q100 90 130 65"/>
+        <circle cx="130" cy="50" r="12"/>
+      </svg>`;
+    }
+
+    // TABS SWITCHING
+    function switchTab(tabId) {
+      ['daily', 'catalog', 'dice', 'edu', 'custom'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`btn-tab-${t}`).classList.remove('text-brand-500');
+        document.getElementById(`btn-tab-${t}`).classList.add('text-slate-400');
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`btn-tab-${tabId}`).classList.add('text-brand-500');
+      document.getElementById(`btn-tab-${tabId}`).classList.remove('text-slate-400');
+      lucide.createIcons();
+    }
+
+    // KATALOG
+    function setFilter(filter) {
+      activeFilter = filter;
+      document.querySelectorAll('.cat-pill').forEach(b => {
+        b.className = 'cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400';
+      });
+      event.target.className = 'cat-pill active px-3 py-1.5 rounded-full text-xs font-medium border bg-brand-500 border-brand-500 text-white';
+      renderCatalog();
+    }
+
+    function renderCatalog() {
+      const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      const allPos = getAllPositions();
+      const grid = document.getElementById('catalogGrid');
+
+      const filtered = allPos.filter(p => {
+        const matchesCat = activeFilter === 'all' || p.level === activeFilter;
+        const matchesQuery = p.name.toLowerCase().includes(q) || p.humor.toLowerCase().includes(q);
+        return matchesCat && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">Brak wyników wyszukiwania.</p>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => `
+        <div class="bg-brand-card border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-mono text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-md">${p.level}</span>
+              <h4 class="text-sm font-bold text-white">${p.name}</h4>
+            </div>
+            <p class="text-xs text-slate-400 line-clamp-1">${p.humor}</p>
+          </div>
+          <button onclick="previewPosition(${p.id})" class="p-2 bg-slate-800 text-slate-300 rounded-xl hover:text-white shrink-0 active:scale-95">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function previewPosition(id) {
+      const pos = getAllPositions().find(p => p.id === id);
+      if (!pos) return;
+      switchTab('daily');
+      const container = document.getElementById('dailyCardContainer');
+      document.getElementById('currentCardDate').innerText = "Podgląd";
+      container.innerHTML = `
+        <div class="p-6 bg-gradient-to-b from-slate-900/60 to-brand-card">
+          <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase">${pos.level}</span>
+          <div class="py-2 flex items-center justify-center">${pos.art || defaultArt()}</div>
+          <div class="text-center mt-3">
+            <h3 class="text-xl font-bold text-white">${pos.name}</h3>
+            <p class="text-xs text-brand-accent mt-0.5">${pos.vibe || ''}</p>
+          </div>
+        </div>
+        <div class="p-5 space-y-3 bg-brand-card border-t border-slate-800">
+          <p class="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800">${pos.humor}</p>
+          <p class="text-xs text-slate-300 leading-relaxed">${pos.howTo}</p>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    // KOSTKA PRZEZNACZENIA
+    function rollTheDice() {
+      const box = document.getElementById('diceDisplay');
+      box.classList.add('shake-anim');
+
+      setTimeout(() => {
+        box.classList.remove('shake-anim');
+        const allPos = getAllPositions();
+        const rand = allPos[Math.floor(Math.random() * allPos.length)];
+        document.getElementById('diceTitle').innerText = rand.name;
+        document.getElementById('diceDesc').innerText = `${rand.level} • ${rand.humor}`;
+      }, 500);
+    }
+
+    // CUSTOM POSITIONS / LOCALSTORAGE
+    function toggleCustomForm() {
+      document.getElementById('customFormContainer').classList.toggle('hidden');
+    }
+
+    function saveCustomPosition() {
+      const name = document.getElementById('custName').value.trim();
+      const humor = document.getElementById('custHumor').value.trim();
+      const howTo = document.getElementById('custHow').value.trim();
+      const level = document.getElementById('custDiff').value;
+
+      if (!name || !howTo) {
+        alert("Podaj co najmniej nazwę i sposób wykonania!");
+        return;
+      }
+
+      const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
+      const newPos = {
+        id: Date.now(),
+        name,
+        humor: humor || "Pozycja stworzona według Waszego autorskiego patentu.",
+        howTo,
+        level,
+        vibe: "Autorska",
+        art: defaultArt()
+      };
+
+      custom.push(newPos);
+      localStorage.setItem('kama_custom_positions', JSON.stringify(custom));
+
+      document.getElementById('custName').value = '';
+      document.getElementById('custHumor').value = '';
+      document.getElementById('custHow').value = '';
+      toggleCustomForm();
+      renderCustomPositions();
+      renderCatalog();
+    }
+
+    function renderCustomPositions() {
+      const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
+      const list = document.getElementById('customPositionsList');
+
+      if (custom.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nie dodaliście jeszcze własnych pozycji.</p>`;
+        return;
+      }
+
+      list.innerHTML = custom.map(p => `
+        <div class="bg-brand-card border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
+          <div>
+            <h4 class="text-xs font-bold text-white">${p.name}</h4>
+            <span class="text-[10px] text-slate-400">${p.level}</span>
+          </div>
+          <button onclick="deleteCustomPosition(${p.id})" class="text-slate-500 hover:text-red-400 p-1.5">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function deleteCustomPosition(id) {
+      let custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
+      custom = custom.filter(p => p.id !== id);
+      localStorage.setItem('kama_custom_positions', JSON.stringify(custom));
+      renderCustomPositions();
+      renderCatalog();
+    }
+
+    // ULUBIONE
+    function checkIfFavorite(id) {
+      const favs = JSON.parse(localStorage.getItem('kama_favs') || '[]');
+      return favs.includes(id);
+    }
+
+    function toggleFavorite(id) {
+      let favs = JSON.parse(localStorage.getItem('kama_favs') || '[]');
+      if (favs.includes(id)) {
+        favs = favs.filter(f => f !== id);
+      } else {
+        favs.push(id);
+      }
+      localStorage.setItem('kama_favs', JSON.stringify(favs));
+      renderDailyCard();
+    }
+
+    // MODAL iOS
+    function openInstallModal() {
+      document.getElementById('iosInstallModal').classList.remove('hidden');
+    }
+    function closeInstallModal() {
+      document.getElementById('iosInstallModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
