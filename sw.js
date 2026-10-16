@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kamadziennie-v2';
+const CACHE_NAME = 'kamadziennie-v99';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
