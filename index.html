@@ -12,7 +12,6 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236366f1'/><path d='M50 32 C35 15, 15 32, 50 72 C85 32, 65 15, 50 32 Z' fill='%23ffffff'/></svg>">
 
-  <!-- Tailwind CSS CDN & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
@@ -22,11 +21,8 @@
         extend: {
           colors: {
             brand: {
-              50: '#eef2ff',
               500: '#6366f1',
-              600: '#4f46e5',
-              dark: '#0f111a',
-              card: '#181b26',
+              card: '#161926',
               accent: '#f43f5e'
             }
           }
@@ -36,7 +32,6 @@
   </script>
 
   <style>
-    /* Wsparcie dla notch / dynamic island i paska domowego iOS */
     body {
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
@@ -47,7 +42,7 @@
       padding-bottom: calc(5rem + env(safe-area-inset-bottom));
     }
     .ios-glass {
-      background: rgba(24, 27, 38, 0.78);
+      background: rgba(22, 25, 38, 0.85);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
@@ -59,7 +54,7 @@
       scrollbar-width: none;
     }
     .shake-anim {
-      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+      animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
     }
     @keyframes shake {
       10%, 90% { transform: translate3d(-1px, 0, 0); }
@@ -67,40 +62,57 @@
       30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
       40%, 60% { transform: translate3d(4px, 0, 0); }
     }
+    /* Stylizacja wektorów sylwetek partnerskich */
+    .figure-p1 {
+      fill: rgba(99, 102, 241, 0.25);
+      stroke: #818cf8;
+      stroke-width: 2.2;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .figure-p2 {
+      fill: rgba(244, 63, 94, 0.25);
+      stroke: #fb7185;
+      stroke-width: 2.2;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .figure-prop {
+      fill: #1e293b;
+      stroke: #475569;
+      stroke-width: 2;
+    }
   </style>
 </head>
 <body class="bg-[#0b0d14] text-slate-100 min-h-screen antialiased font-sans flex justify-center">
 
   <div class="w-full max-w-md min-h-screen flex flex-col relative pb-safe border-x border-slate-800/40">
     
-    <!-- Top Header -->
-    <header class="sticky top-0 z-40 ios-glass border-b border-slate-800/80 px-5 py-3.5 flex items-center justify-between">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 ios-glass border-b border-slate-800 px-5 py-3.5 flex items-center justify-between">
       <div class="flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-500 to-brand-accent flex items-center justify-center shadow-lg shadow-brand-500/30">
           <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
         </div>
         <div>
           <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-            KamaDziennie <span class="text-[10px] bg-brand-500/20 text-brand-500 px-1.5 py-0.5 rounded-full font-mono uppercase">Edu</span>
+            KamaDziennie <span class="text-[10px] bg-brand-500/20 text-brand-500 px-1.5 py-0.5 rounded-full font-mono uppercase">Edu 31</span>
           </h1>
           <p id="todayDateStr" class="text-[11px] text-slate-400 font-medium capitalize"></p>
         </div>
       </div>
-      <div class="flex items-center gap-1.5">
-        <button onclick="openInstallModal()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-1">
-          <i data-lucide="share" class="w-3.5 h-3.5 text-brand-accent"></i>
-          <span>iOS</span>
-        </button>
-      </div>
+      <button onclick="openInstallModal()" class="text-xs bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-1">
+        <i data-lucide="share" class="w-3.5 h-3.5 text-brand-accent"></i>
+        <span>iOS</span>
+      </button>
     </header>
 
-    <!-- Main Content Tabs -->
+    <!-- Main Views -->
     <main class="flex-1 px-4 py-4 overflow-y-auto hide-scrollbar">
       
       <!-- TAB 1: DZIEŃ -->
       <section id="tab-daily" class="space-y-4">
-        <!-- Date Selector Navigation -->
-        <div class="flex items-center justify-between bg-brand-card/70 border border-slate-800/80 rounded-2xl p-2 px-3 text-xs text-slate-400">
+        <div class="flex items-center justify-between bg-brand-card border border-slate-800 rounded-2xl p-2 px-3 text-xs text-slate-400">
           <button onclick="shiftDate(-1)" class="p-1.5 hover:text-white active:scale-90 transition rounded-lg">
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
           </button>
@@ -110,19 +122,15 @@
           </button>
         </div>
 
-        <!-- Position Card -->
-        <div id="dailyCardContainer" class="bg-brand-card border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl relative">
-          <!-- Wstrzykiwane przez JS -->
-        </div>
+        <div id="dailyCardContainer" class="bg-brand-card border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative"></div>
 
-        <!-- Quick Tips Mini-Banner -->
-        <div class="bg-gradient-to-r from-brand-card to-slate-900 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-3.5">
+        <div class="bg-gradient-to-r from-brand-card to-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3.5">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
             <i data-lucide="shield-check" class="w-5 h-5"></i>
           </div>
           <div>
-            <h4 class="text-xs font-semibold text-white">Zasada nr 1: Komunikacja</h4>
-            <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">Żadna pozycja nie daje frajdy bez zgody, luzu i bezpiecznego słowa.</p>
+            <h4 class="text-xs font-semibold text-white">Zasada nr 1: Bezpieczeństwo i luz</h4>
+            <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">Każde ciało ma inną elastyczność. Jeśli cokolwiek ciągnie w kręgosłupie, zmieńcie kąt lub pozycję.</p>
           </div>
         </div>
       </section>
@@ -131,32 +139,28 @@
       <section id="tab-catalog" class="space-y-4 hidden">
         <div class="relative">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="searchInput" oninput="renderCatalog()" placeholder="Szukaj (np. łyżeczki, łatwa, relaks)..." class="w-full bg-brand-card border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          <input type="text" id="searchInput" oninput="renderCatalog()" placeholder="Szukaj spośród 31 pozycji..." class="w-full bg-brand-card border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
         </div>
 
-        <!-- Filter Badges -->
         <div class="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar" id="catalogFilters">
-          <button onclick="setFilter('all')" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-medium border bg-brand-500 border-brand-500 text-white">Wszystkie</button>
+          <button onclick="setFilter('all')" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-medium border bg-brand-500 border-brand-500 text-white">Wszystkie (31)</button>
           <button onclick="setFilter('Łatwy')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Łatwe</button>
           <button onclick="setFilter('Średni')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Średnie</button>
-          <button onclick="setFilter('Trudny')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Akrobacja</button>
+          <button onclick="setFilter('Trudny')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium border border-slate-800 bg-brand-card text-slate-400">Zaawansowane</button>
         </div>
 
-        <!-- Catalog Grid -->
-        <div id="catalogGrid" class="grid grid-cols-1 gap-3">
-          <!-- Wstrzykiwane przez JS -->
-        </div>
+        <div id="catalogGrid" class="grid grid-cols-1 gap-3"></div>
       </section>
 
-      <!-- TAB 3: KOSTKA (RANDOMIZER) -->
+      <!-- TAB 3: KOSTKA -->
       <section id="tab-dice" class="space-y-5 hidden text-center py-6">
         <div>
           <span class="text-xs font-mono uppercase tracking-widest text-brand-accent bg-brand-accent/10 px-2.5 py-1 rounded-full">Spontaniczność</span>
           <h2 class="text-xl font-bold text-white mt-2">Kostka Przeznaczenia</h2>
-          <p class="text-xs text-slate-400 max-w-xs mx-auto mt-1">Brak pomysłu na wieczór? Kliknij i niech los zdecyduje za Was.</p>
+          <p class="text-xs text-slate-400 max-w-xs mx-auto mt-1">Losuj z puli 31 pozycji na ten miesiąc.</p>
         </div>
 
-        <div id="diceDisplay" class="bg-brand-card border border-slate-800 rounded-3xl p-6 shadow-2xl transition-all">
+        <div id="diceDisplay" class="bg-brand-card border border-slate-800 rounded-3xl p-6 shadow-2xl">
           <div class="w-24 h-24 mx-auto rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-brand-accent mb-4">
             <i data-lucide="dices" class="w-12 h-12" id="diceIcon"></i>
           </div>
@@ -174,48 +178,48 @@
       <section id="tab-edu" class="space-y-4 hidden">
         <div>
           <h2 class="text-lg font-bold text-white">Strefa Świadomości</h2>
-          <p class="text-xs text-slate-400">Edukacja intymna bez wstydu, oparta na faktach i szacunku.</p>
+          <p class="text-xs text-slate-400">Edukacja intymna bez tabu i fałszywych mitów.</p>
         </div>
 
         <div class="space-y-3">
           <div class="bg-brand-card border border-slate-800 p-4 rounded-2xl">
             <div class="flex items-center gap-2.5 text-brand-500 font-semibold text-sm">
               <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-              <h3>Świadoma zgoda (Enthusiastic Consent)</h3>
+              <h3>Świadoma obustronna zgoda</h3>
             </div>
             <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-              Tylko szczere, obustronne "tak" oznacza zgodę. Cisza, niepewność czy wahanie to nie przyzwolenie. Zgodę można cofnąć w dosłownie każdej sekundzie i nie ma w tym nic złego.
+              Zgoda musi być entuzjastyczna i ciągła. Zmiana nastroju w trakcie zbliżenia jest w 100% naturalna – wystarczy jedno słowo, by przerwać lub zmienić tempo.
             </p>
           </div>
 
           <div class="bg-brand-card border border-slate-800 p-4 rounded-2xl">
             <div class="flex items-center gap-2.5 text-brand-accent font-semibold text-sm">
               <i data-lucide="heart" class="w-4 h-4"></i>
-              <h3>Porno to fikcja filmowa</h3>
+              <h3>Rzeczywistość vs Fikcja</h3>
             </div>
             <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-              Filmy dla dorosłych są reżyserowane pod kątem kamery, a nie realnej wygody partnerów. W prawdziwym życiu liczy się intymność, gra wstępna, bliskość i brak presji na nierealistyczne standardy.
+              Media często przedstawiają nienaturalne akrobacje. W prawdziwym życiu kluczowa jest komunikacja, wzajemny szacunek oraz dopasowanie pozycji do komfortu obu osób.
             </p>
           </div>
 
           <div class="bg-brand-card border border-slate-800 p-4 rounded-2xl">
             <div class="flex items-center gap-2.5 text-emerald-400 font-semibold text-sm">
               <i data-lucide="activity" class="w-4 h-4"></i>
-              <h3>Ergonomia i kręgosłup</h3>
+              <h3>Fizjologia i ergonomia</h3>
             </div>
             <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-              Intymność to ruch. Poduszka pod biodra lub lędźwie potrafi diametralnie zmienić kąt i odciążyć stawy. Jeśli coś boli – nie ciśnij na siłę, zmień pozycję.
+              Poduszki klinowe lub zrolowany koc potrafią zmienić kąt o kilkanaście stopni, całkowicie niwelując ucisk na nerwy i stawy krzyżowo-biodrowe.
             </p>
           </div>
         </div>
       </section>
 
-      <!-- TAB 5: WŁASNE / EDYTOR -->
+      <!-- TAB 5: WŁASNE -->
       <section id="tab-custom" class="space-y-4 hidden">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-lg font-bold text-white">Twoje Pozycje</h2>
-            <p class="text-xs text-slate-400">Dodajcie własne warianty i pomysły.</p>
+            <p class="text-xs text-slate-400">Dodajcie własne warianty.</p>
           </div>
           <button onclick="toggleCustomForm()" class="text-xs bg-brand-500 text-white px-3 py-2 rounded-xl flex items-center gap-1">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -223,33 +227,29 @@
           </button>
         </div>
 
-        <!-- Add Form -->
         <div id="customFormContainer" class="hidden bg-brand-card border border-slate-800 p-4 rounded-2xl space-y-3">
-          <input type="text" id="custName" placeholder="Nazwa pozycji (np. Miękki Koc)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
-          <input type="text" id="custHumor" placeholder="Śmieszny opis / tekst z życia wzięty" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
-          <textarea id="custHow" placeholder="Jak poprawnie wykonać krok po kroku..." rows="2" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+          <input type="text" id="custName" placeholder="Nazwa pozycji" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
+          <input type="text" id="custHumor" placeholder="Śmieszny opis / spostrzeżenie" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white">
+          <textarea id="custHow" placeholder="Krok po kroku: jak wykonać..." rows="2" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white"></textarea>
           <div class="flex gap-2">
             <select id="custDiff" class="bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs text-white flex-1">
               <option value="Łatwy">Trudność: Łatwy</option>
               <option value="Średni">Trudność: Średni</option>
-              <option value="Trudny">Trudność: Akrobacja</option>
+              <option value="Trudny">Trudność: Zaawansowany</option>
             </select>
             <button onclick="saveCustomPosition()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-medium">Zapisz</button>
           </div>
         </div>
 
-        <!-- Custom List -->
-        <div id="customPositionsList" class="space-y-2.5">
-          <!-- Wstrzykiwane przez JS -->
-        </div>
+        <div id="customPositionsList" class="space-y-2.5"></div>
       </section>
 
     </main>
 
-    <!-- Bottom Navigation (iOS TabBar) -->
-    <nav class="fixed bottom-0 w-full max-w-md ios-glass border-t border-slate-800/80 z-40 px-2 py-2">
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 w-full max-w-md ios-glass border-t border-slate-800 z-40 px-2 py-2">
       <div class="flex justify-around items-center">
-        <button onclick="switchTab('daily')" id="btn-tab-daily" class="nav-tab active flex flex-col items-center gap-1 text-brand-500">
+        <button onclick="switchTab('daily')" id="btn-tab-daily" class="nav-tab flex flex-col items-center gap-1 text-brand-500">
           <i data-lucide="calendar" class="w-5 h-5"></i>
           <span class="text-[10px] font-medium">Dzień</span>
         </button>
@@ -272,17 +272,17 @@
       </div>
     </nav>
 
-    <!-- iOS Add to Home Screen Modal -->
+    <!-- iOS Modal -->
     <div id="iosInstallModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center p-4">
       <div class="bg-brand-card border border-slate-800 rounded-3xl p-5 max-w-sm w-full space-y-4 text-center">
         <div class="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-500 mx-auto flex items-center justify-center">
           <i data-lucide="smartphone" class="w-6 h-6"></i>
         </div>
         <div>
-          <h3 class="text-base font-bold text-white">Zainstaluj jako apkę na iOS</h3>
-          <p class="text-xs text-slate-400 mt-1">Używaj jak aplikacji z App Store w pełnym oknie.</p>
+          <h3 class="text-base font-bold text-white">Dodaj na ekran początkowy</h3>
+          <p class="text-xs text-slate-400 mt-1">Używaj jak aplikacji z App Store na iOS.</p>
         </div>
-        <div class="bg-slate-900/90 rounded-2xl p-3 text-left space-y-2 text-xs text-slate-300 border border-slate-800">
+        <div class="bg-slate-900 rounded-2xl p-3 text-left space-y-2 text-xs text-slate-300 border border-slate-800">
           <div class="flex items-center gap-2.5">
             <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">1</span>
             <span>W Safari dotknij ikony <b>Udostępnij</b> na dolnym pasku.</span>
@@ -291,115 +291,235 @@
             <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">2</span>
             <span>Wybierz <b>Do ekranu początkowego</b>.</span>
           </div>
-          <div class="flex items-center gap-2.5">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">3</span>
-            <span>Dotknij <b>Dodaj</b> w prawym górnym rogu.</span>
-          </div>
         </div>
-        <button onclick="closeInstallModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold">Rozumiem</button>
+        <button onclick="closeInstallModal()" class="w-full py-2.5 bg-slate-800 text-white rounded-xl text-xs font-semibold">Zamknij</button>
       </div>
     </div>
 
   </div>
 
   <script>
-    // BAZA POZYCJI (Elegancka linia, edukacja, subtelne grafiki SVG)
-    const POSITIONS = [
-      {
-        id: 1,
-        name: "Leniwa Łyżeczka",
-        level: "Łatwy",
-        vibe: "Niedzielny Chill",
-        humor: "Dla tych, którzy chcą być blisko, ale zjedli za dużo pizzy i poruszenie nogą wymaga zgody zarządu.",
-        howTo: "Oboje leżycie na tym samym boku, tyłem do partnera. Warto podłożyć poduszkę pod głowę i lekko ugiąć kolana, by odciążyć dolny odcinek pleców.",
-        benefit: "Maksymalny kontakt skórą do skóry, wolne tempo i zerowy wysiłek kardio.",
-        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
-                <circle cx="50" cy="50" r="10" class="stroke-brand-accent"/>
-                <path d="M50 60 C55 75, 70 80, 110 80 C130 80, 145 90, 160 90"/>
-                <circle cx="70" cy="45" r="10"/>
-                <path d="M70 55 C75 70, 90 75, 125 75 C145 75, 155 85, 175 85"/>
-              </svg>`
-      },
-      {
-        id: 2,
-        name: "Klasyk z Poduszką (Pro-Tip)",
-        level: "Łatwy",
-        vibe: "Romantyczny",
-        humor: "Niby zwyczajna misjonarska, ale jedna poduszka sprawia, że czujesz się jak inżynier ergonomii lędźwiowej.",
-        howTo: "Jedna osoba leży na plecach z poduszką wsuniętą pod biodra/miednicę. Druga podpiera się stabilnie na przedramionach, nie opierając całego ciężaru ciała.",
-        benefit: "Lepszy kąt nachylenia, głębsza stymulacja i brak niepotrzebnego napięcia w karku.",
-        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
-                <rect x="70" y="85" width="45" height="12" rx="4" class="fill-slate-800 stroke-slate-700"/>
-                <circle cx="45" cy="80" r="10" class="stroke-brand-accent"/>
-                <path d="M55 80 L90 85 L140 85"/>
-                <circle cx="65" cy="40" r="10"/>
-                <path d="M65 50 L95 65 L125 80"/>
-              </svg>`
-      },
-      {
-        id: 3,
-        name: "Mostek Westchnień",
-        level: "Średni",
-        vibe: "Głębokie Zbliżenie",
-        humor: "Wygląda jak ćwiczenie z fizjoterapii na wzmocnienie pośladków, ale działa zaskakująco dobrze.",
-        howTo: "Osoba na plecach unosi miednicę opierając stopy na materacu lub udach partnera. Druga osoba klęczy i zachowuje stabilną pionową sylwetkę.",
-        benefit: "Świetna kontrola tempa i głęboki kontakt wzrokowy.",
-        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
-                <circle cx="40" cy="80" r="10" class="stroke-brand-accent"/>
-                <path d="M50 82 Q80 50 110 85 L125 85"/>
-                <circle cx="120" cy="40" r="10"/>
-                <path d="M120 50 L115 75 L110 90"/>
-              </svg>`
-      },
-      {
-        id: 4,
-        name: "Lotos na Spokojnie",
-        level: "Trudny",
-        vibe: "Pełna Bliskość",
-        humor: "Wymaga stawów kolanowych, które nie pamiętają jeszcze upadków na deskorolce w 2012 roku.",
-        howTo: "Jedna osoba siada w siadzie skrzyżnym. Druga siada na jej udach, obejmując ją nogami i ramionami za szyję. Ruch polega na delikatnym kołysaniu, nie dynamicznym tarciu.",
-        benefit: "Niezrównana intymność – usta przy ustach, wspólny oddech i synchronizacja.",
-        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
-                <circle cx="90" cy="35" r="10" class="stroke-brand-accent"/>
-                <path d="M90 45 L90 75 L70 90 L115 90"/>
-                <circle cx="110" cy="38" r="10"/>
-                <path d="M110 48 L105 75 L125 90 L85 90"/>
-              </svg>`
-      },
-      {
-        id: 5,
-        name: "Amazonka w Tempie Chill",
-        level: "Średni",
-        vibe: "Kontrola i Luz",
-        humor: "Idealna opcja, gdy facet chce odpocząć, a partnerka ma pełną władzę nad prędkością i kątem natarcia.",
-        howTo: "Partner leży swobodnie na plecach. Partnerka siada na górze, opierając stopy płasko na łóżku lub klęcząc. Ważne: to ona dyktuje głębokość i prędkość.",
-        benefit: "Kobieta ma pełną kontrolę nad stymulacją łechtaczki i kątem penetracji.",
-        art: `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round stroke-linejoin-round mx-auto">
-                <circle cx="45" cy="85" r="10"/>
-                <path d="M55 85 L145 85"/>
-                <circle cx="95" cy="35" r="10" class="stroke-brand-accent"/>
-                <path d="M95 45 L95 75 L80 90 M95 75 L115 90"/>
-              </svg>`
-      }
+    // BAZA PEŁNYCH 31 POZYCJI NA KAŻDY DZIEŃ MIESIĄCA
+    const POSITIONS_31 = [
+      { id: 1, name: "Leniwa Łyżeczka", level: "Łatwy", vibe: "Niedzielny Chill", humor: "Gdy pizza wygrała z ambicją, a poruszenie nogą wymaga zgody zarządu.", howTo: "Oboje leżycie na boku twarzą w tę samą stronę. Kolana lekko ugięte pod kątem 45 stopni.", benefit: "Odciąża odcinek lędźwiowy i nie obciąża kolan.", poseType: "spooning" },
+      { id: 2, name: "Klasyk z Poduszką", level: "Łatwy", vibe: "Romantyczny", humor: "Zwykły misjonarz, ale jedna poduszka robi z Ciebie inżyniera ergonomii.", howTo: "Poduszka pod miednicę partnerki unosi biodra o 15 cm. Partner opiera się na przedramionach.", benefit: "Precyzyjny kąt natarcia bez bólu karku.", poseType: "missionary_cushion" },
+      { id: 3, name: "Mostek Westchnień", level: "Średni", vibe: "Głębokie Zbliżenie", humor: "Wygląda jak seria ćwiczeń z rehabilitacji, ale kąt jest rewelacyjny.", howTo: "Partnerka leży na plecach z uniesioną miednicą i stopami na materacu. Partner klęczy z prostymi plecami.", benefit: "Mocny kontakt wzrokowy i napięcie mięśni dna miednicy.", poseType: "bridge" },
+      { id: 4, name: "Amazonka Chill", level: "Średni", vibe: "Pełna Kontrola", humor: "Facet leży zmęczony po całym dniu, a dziewczyna ma uprawnienia administratora prędkości.", howTo: "Partner leży swobodnie. Partnerka siada na górze i nadaje tempo ruchem bioder.", benefit: "Pełna kontrola nad stymulacją łechtaczki.", poseType: "cowgirl" },
+      { id: 5, name: "Lotos Bliskości", level: "Trudny", vibe: "Intymny Dialog", humor: "Wymaga stawów biodrowych, które nie pamiętają jeszcze wypadków z dzieciństwa.", howTo: "Partner siada w siadzie skrzyżnym. Partnerka siada na jego udach, obejmując go nogami wokół talii.", benefit: "Usta przy ustach, wspólny oddech i powolny zmysłowy rytm.", poseType: "lotus" },
+      { id: 6, name: "Złożony Scyzoryk", level: "Średni", vibe: "Kardio & Głębokość", humor: "Lekki stretching przed wejściem wskazany, chyba że lubicie skurcze w łydkach.", howTo: "Partnerka leży na plecach, opierając nogi na ramionach partnera. Partner pochyla się do przodu.", benefit: "Maksymalna stymulacja punktu G bez dużej prędkości.", poseType: "jackknife" },
+      { id: 7, name: "Krawędź Równowagi", level: "Łatwy", vibe: "Cichy & Wygodny", humor: "Dla mieszkających w bloku z karton-gipsu – zero skrzypienia ramy łóżka.", howTo: "Partnerka leży na plecach przy samym brzegu łóżka. Partner stoi lub klęczy na podłodze.", benefit: "Eliminuje nacisk ciężaru ciała na klatkę piersiową.", poseType: "edge_bed" },
+      { id: 8, name: "Ruchoma Wieża", level: "Trudny", vibe: "Eksploracja", humor: "Jak jazda tyłem w pociągu – perspektywa inna, ale widoki pierwsza klasa.", howTo: "Partner leży na plecach. Partnerka siada na górze tyłem do jego twarzy, opierając dłonie na jego udach.", benefit: "Stymulacja tylnej ściany i wolne ręce do dodatkowego dotyku.", poseType: "reverse_cowgirl" },
+      { id: 9, name: "Górska Przełęcz", level: "Średni", vibe: "Mocny Akcent", humor: "Stabilna pozycja, dopóki ktoś nie zapomni podłożyć miękkiego koca pod kolana.", howTo: "Partnerka w klęku podpartym na przedramionach. Partner klęczy za nią pod kątem 90 stopni.", benefit: "Naturalne wygięcie kręgosłupa i głębokie dopasowanie.", poseType: "rear_kneeling" },
+      { id: 10, name: "Motyl na Blacie", level: "Średni", vibe: "Spontaniczny Chill", humor: "Kiedy kuchnia wzywa, ale lodówka może poczekać 10 minut.", howTo: "Partnerka siada na stabilnym stole lub komodzie. Partner stoi naprzeciwko, obejmując jej biodra.", benefit: "Naturalna wysokość bez schylania kręgosłupa.", poseType: "countertop" },
+      { id: 11, name: "Kołyska Zmysłów", level: "Łatwy", vibe: "Czułość", humor: "Dobra na deszczowy wieczór pod ciepłą kołdrą z herbatą w zasięgu ręki.", howTo: "Leżenie naprzeciwko siebie na boku, splecione nogi i powolny ruch miednicy.", benefit: "Bardzo małe zmęczenie fizyczne i dużo przytulania.", poseType: "spooning" },
+      { id: 12, name: "Wodospad", level: "Trudny", vibe: "Elastyczność", humor: "Wymaga materaca o odpowiedniej twardości i braku zawrotów głowy.", howTo: "Partnerka leży w poprzek łóżka z głową delikatnie opadającą poza krawędź. Partner stoi przed nią.", benefit: "Nietypowa grawitacja i uczucie przyjemnego odprężenia karku.", poseType: "edge_bed" },
+      { id: 13, name: "Pół-Lotos Kanapowy", level: "Średni", vibe: "Spokojny Wieczór", humor: "Komfort lotosu, ale z podparciem oparcia kanapy dla leniwych pleców.", howTo: "Partner opiera plecy o wezgłowie łóżka. Partnerka siada na nim z jedną nogą ugiętą.", benefit: "Stabilne oparcie dla kręgosłupa partnera.", poseType: "lotus" },
+      { id: 14, name: "Fotel Prezesa", level: "Łatwy", vibe: "Komfort", humor: "Gdy w sypialni stoi ten jeden wygodny fotel, na którym zwykle leżą ubrania.", howTo: "Partner siada głęboko w fotelu. Partnerka siada na nim przodem, opierając stopy na podłodze.", benefit: "Komfortowa pozycja siedząca bez obciążania rąk.", poseType: "cowgirl" },
+      { id: 15, name: "Boczny Nożycowy", level: "Średni", vibe: "Rytm", humor: "Nogi ułożone jak nożyczki krawieckie, ale efekt zaskakująco płynny.", howTo: "Oboje leżą na bokach prostopadle do siebie, krzyżując nogi na wysokości bioder.", benefit: "Ciasne przyleganie i delikatna stymulacja punktowa.", poseType: "jackknife" },
+      { id: 16, name: "Odwrócona Łyżka", level: "Łatwy", vibe: "Relaks", humor: "Gdy oboje macie ochotę na drzemkę, ale szkoda kończyć wieczór.", howTo: "Klasyczna łyżeczka, ale z jedną nogą partnerki przerzuconą wyżej przez udo partnera.", benefit: "Łatwiejszy dostęp przy zerowym wysiłku fizycznym.", poseType: "spooning" },
+      { id: 17, name: "Wzniesienie Terenu", level: "Łatwy", vibe: "Anatomiczny Kąt", humor: "Poduszka pod biodrami – prosty inżynierski trik zmieniający wszystko.", howTo: "Partnerka leży na brzuchu z płaską poduszką pod miednicą. Partner leży na niej z wyczuciem.", benefit: "Gęste dopasowanie i minimalny ruch w lędźwiach.", poseType: "missionary_cushion" },
+      { id: 18, name: "Podparty Ślimak", level: "Średni", vibe: "Głęboki Dotyk", humor: "Dla tych, którzy cenią powolne tempo i brak pośpiechu.", howTo: "Partnerka leży na plecach, nogi zgięte w kolanach przy klatce. Partner podpiera się stabilnie.", benefit: "Mocny punkt nacisku na przednią ścianę.", poseType: "jackknife" },
+      { id: 19, name: "Stojący Przytuleniec", level: "Trudny", vibe: "Ekspresja", humor: "Świetnie wygląda na filmach, w realu wymaga solidnej siły w bicepsach.", howTo: "Partnerka opiera się o ścianę i oplata biodra partnera nogami. Partner asekuruje pod pośladki.", benefit: "Mocna dawka endorfin i wysokie tętno.", poseType: "countertop" },
+      { id: 20, name: "Płaska Fala", level: "Łatwy", vibe: "Spokój", humor: "Żadnych podskoków, czysta biomechanika i leniwy oddech.", howTo: "Oboje leżą całkowicie płasko na brzuchu i plecach, minimalny zakres ruchu bioder.", benefit: "Wycisza układ nerwowy i pogłębia bliskość.", poseType: "spooning" },
+      { id: 21, name: "Koń Trojański", level: "Średni", vibe: "Wspólny Rytm", humor: "Partnerka prowadzi, ale partner może pomagać ruchem ud.", howTo: "Partnerka w półprzysiadzie nad partnerem leżącym na plecach z ugiętymi kolanami.", benefit: "Praca mięśni czwórogłowych i pełna kontrola kąta.", poseType: "cowgirl" },
+      { id: 22, name: "Skośny Balans", level: "Średni", vibe: "Nowy Wymiar", humor: "Kąt 45 stopni do osi łóżka – geometria w służbie miłości.", howTo: "Ułożenie partnerów pod kątem ostrym na boku z lekkim uniesieniem jednej nogi.", benefit: "Świetna opcja przy zmęczeniu tradycyjnymi pozycjami.", poseType: "spooning" },
+      { id: 23, name: "Cichy Klęcznik", level: "Łatwy", vibe: "Luz", humor: "Spokojniejsza wersja pozycji od tyłu bez obciążania nadgarstków.", howTo: "Partnerka opiera klatkę piersiową płasko na poduszce. Partner z tyłu w niskim klęku.", benefit: "Brak napięcia w szyi i karku partnerki.", poseType: "rear_kneeling" },
+      { id: 24, name: "Zegar Słoneczny", level: "Średni", vibe: "Rotacja", humor: "Sprawdźcie czy prześcieradło nie zsunie się z materaca podczas obrotu.", howTo: "Zmiana kąta ciała podczas leżenia na boku o 15 stopni co parę minut.", benefit: "Różnorodne bodźce dotykowe bez wstawania.", poseType: "bridge" },
+      { id: 25, name: "Wysoka Wieża", level: "Trudny", vibe: "Siła", humor: "Dla par, które nie opuszczają dnia nóg na siłowni.", howTo: "Partnerka klęczy wyprostowana na partnerze leżącym na plecach, dłonie na jego klatce.", benefit: "Maksymalny pion i głębokość ruchu.", poseType: "reverse_cowgirl" },
+      { id: 26, name: "Trójkąt Bermudzki", level: "Średni", vibe: "Tajemnica", humor: "Nikt nie wie dlaczego działa tak dobrze, ale działa.", howTo: "Partnerka leży na plecach, jedna noga prosta, druga mocno zgięta w kolanie w bok.", benefit: "Asymetryczny nacisk dający unikalne odczucia.", poseType: "missionary_cushion" },
+      { id: 27, name: "Złoty Środek", level: "Łatwy", vibe: "Równowaga", humor: "Ani za szybko, ani za wolno – idealna harmonia na czwartek.", howTo: "Klasyczny misjonarz z rękami splecionymi na dłoniach partnera dla stabilizacji.", benefit: "Poczucie bezpieczeństwa i wspólny rytm serca.", poseType: "missionary_cushion" },
+      { id: 28, name: "Północ-Południe (69 wariacja)", level: "Średni", vibe: "Równoczesność", humor: "Wymaga skupienia podzielności uwagi na poziomie pilota myśliwca.", howTo: "Pozycja naprzemienna na boku z zachowaniem wygody podparcia głowy.", benefit: "Obopólna uwaga bez presji czasu.", poseType: "jackknife" },
+      { id: 29, name: "Wypoczynek Królewski", level: "Łatwy", vibe: "Czysty Relaks", humor: "Gdy jedynym ruchem jest ruch oddechu i delikatne muśnięcia dłoni.", howTo: "Leżenie na wznak z partnerem wtulonym pod pachę, powolna bliskość.", benefit: "Redukcja kortyzolu i wzrost oksytocyny.", poseType: "spooning" },
+      { id: 30, name: "Wahadło", level: "Średni", vibe: "Płynność", humor: "Ruch kołyszący zamiast posuwistego – jak na spokojnym jachcie.", howTo: "W pozycji siedzącej ruch odbywa się wahadłowo w przód i w tył z objęciem.", benefit: "Brak tarcia, skupienie na bliskości i cieple.", poseType: "lotus" },
+      { id: 31, name: "Finał Miesiąca (Wielki Chill)", level: "Łatwy", vibe: "Celebracja", humor: "Przetrwaliście cały miesiąc testów – teraz czas na wspólne lody w łóżku.", howTo: "Wybierzcie tę, która w tym miesiącu sprawiła Wam najwięcej frajdy i uśmiechu.", benefit: "Świetna relacja, zero wstydu i pełne zrozumienie własnych ciał.", poseType: "spooning" }
     ];
+
+    // SILNIK ILUSTRACJI SYLWETKOWYCH (ZERO PATYCZAKÓW - ELEGANCKIE ANATOMICZNE WEKTORY)
+    function generateIllustration(poseType) {
+      switch (poseType) {
+        case 'spooning':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2" stroke-dasharray="4 4"/>
+              <g class="figure-p2">
+                <circle cx="80" cy="65" r="12"/>
+                <path d="M80 77 C90 85, 105 88, 140 88 C160 88, 175 105, 195 105 C185 115, 155 105, 135 105 C110 105, 95 95, 80 88 Z"/>
+                <path d="M100 85 C115 95, 140 98, 160 92" fill="none"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="55" cy="55" r="13"/>
+                <path d="M55 68 C70 78, 90 80, 125 80 C150 80, 165 98, 185 98 C175 108, 145 96, 120 96 C95 96, 75 86, 55 78 Z"/>
+                <path d="M75 75 C95 85, 125 88, 145 75" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'missionary_cushion':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <polygon points="110,118 165,118 165,95 110,110" class="figure-prop"/>
+              <g class="figure-p2">
+                <circle cx="60" cy="100" r="12"/>
+                <path d="M72 104 C95 104, 115 102, 145 92 C165 85, 180 70, 195 55 C200 65, 185 85, 165 98 C135 115, 100 115, 72 112 Z"/>
+                <path d="M145 92 Q175 60 190 50" fill="none"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="105" cy="45" r="13"/>
+                <path d="M105 58 C120 70, 135 80, 150 90 C140 105, 130 118, 115 118 C125 108, 128 95, 115 85 C100 75, 95 65, 105 58 Z"/>
+                <path d="M98 62 L85 95 L95 118" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'bridge':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
+              <g class="figure-p2">
+                <circle cx="50" cy="105" r="12"/>
+                <path d="M62 108 Q105 60 150 78 C160 90, 165 105, 170 120 C160 120, 155 105, 145 92 Q105 82, 62 115 Z"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="185" cy="45" r="13"/>
+                <path d="M185 58 C175 75, 165 90, 155 100 C165 112, 180 120, 195 120 C185 112, 180 95, 185 75 Z"/>
+                <path d="M175 65 L150 82" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'cowgirl':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
+              <g class="figure-p1">
+                <circle cx="55" cy="105" r="13"/>
+                <path d="M68 110 L195 110 C190 118, 70 118, 68 110 Z"/>
+              </g>
+              <g class="figure-p2">
+                <circle cx="130" cy="35" r="12"/>
+                <path d="M130 47 C138 65, 140 85, 135 105 C125 110, 115 115, 105 115 C118 105, 122 85, 118 65 Z"/>
+                <path d="M135 95 C145 105, 155 115, 160 118" fill="none"/>
+                <path d="M125 55 L105 85" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'lotus':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M40 122 L220 122" stroke="#334155" stroke-width="2"/>
+              <g class="figure-p1">
+                <circle cx="115" cy="40" r="13"/>
+                <path d="M115 53 C110 75, 108 95, 100 115 C115 120, 145 120, 155 115 C140 100, 135 75, 128 53 Z"/>
+                <path d="M115 70 L90 90 L130 115" fill="none"/>
+              </g>
+              <g class="figure-p2">
+                <circle cx="138" cy="42" r="12"/>
+                <path d="M138 54 C132 75, 125 95, 120 112 C132 115, 150 110, 158 100 C152 85, 150 68, 148 54 Z"/>
+                <path d="M135 65 L115 55" fill="none"/>
+                <path d="M125 90 C105 92, 95 85, 88 80" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'jackknife':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
+              <g class="figure-p2">
+                <circle cx="65" cy="105" r="12"/>
+                <path d="M77 108 L125 108 C130 95, 120 60, 110 40 C100 45, 110 75, 115 95 Z"/>
+                <path d="M125 105 Q120 65 105 45" fill="none"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="165" cy="45" r="13"/>
+                <path d="M165 58 C150 75, 140 92, 130 105 C145 115, 160 118, 175 118 C165 105, 170 85, 178 58 Z"/>
+                <path d="M155 65 L115 80" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'edge_bed':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <rect x="20" y="80" width="120" height="40" class="figure-prop"/>
+              <g class="figure-p2">
+                <circle cx="50" cy="65" r="12"/>
+                <path d="M62 70 L135 70 C140 85, 145 95, 150 110 C142 110, 132 95, 128 80 Z"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="175" cy="35" r="13"/>
+                <path d="M175 48 C168 68, 162 88, 155 105 L155 120 C165 120, 175 105, 185 70 Z"/>
+                <path d="M165 55 L135 70" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'reverse_cowgirl':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
+              <g class="figure-p1">
+                <circle cx="55" cy="105" r="13"/>
+                <path d="M68 110 L195 110 C190 118, 70 118, 68 110 Z"/>
+              </g>
+              <g class="figure-p2">
+                <circle cx="150" cy="40" r="12"/>
+                <path d="M150 52 C142 70, 138 90, 135 105 C125 105, 120 95, 125 80 C130 65, 135 55, 142 52 Z"/>
+                <path d="M145 60 L170 85" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'rear_kneeling':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <path d="M20 120 L240 120" stroke="#334155" stroke-width="2"/>
+              <g class="figure-p2">
+                <circle cx="65" cy="75" r="12"/>
+                <path d="M75 80 L120 70 L135 118 C125 118, 115 105, 110 95 L85 95 L80 118" fill="none"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="165" cy="45" r="13"/>
+                <path d="M165 58 C155 75, 145 90, 135 105 L145 118 C155 118, 165 105, 175 80 Z"/>
+                <path d="M155 65 L125 75" fill="none"/>
+              </g>
+            </svg>`;
+
+        case 'countertop':
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <rect x="30" y="75" width="80" height="45" class="figure-prop"/>
+              <g class="figure-p2">
+                <circle cx="70" cy="45" r="12"/>
+                <path d="M70 57 L75 75 L95 75 L105 105" fill="none"/>
+              </g>
+              <g class="figure-p1">
+                <circle cx="130" cy="35" r="13"/>
+                <path d="M130 48 L125 80 L125 120" fill="none"/>
+                <path d="M125 55 L85 65" fill="none"/>
+              </g>
+            </svg>`;
+
+        default:
+          return `
+            <svg viewBox="0 0 260 140" class="w-full h-40 mx-auto">
+              <circle cx="95" cy="65" r="16" class="figure-p1"/>
+              <circle cx="165" cy="65" r="16" class="figure-p2"/>
+              <path d="M95 85 Q130 115 165 85" stroke="#818cf8" stroke-width="3" fill="none"/>
+            </svg>`;
+      }
+    }
 
     let currentDateOffset = 0;
     let activeFilter = 'all';
 
-    // Inicjalizacja
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       updateDateDisplay();
       renderDailyCard();
       renderCatalog();
       renderCustomPositions();
-      registerServiceWorker();
-    });
-
-    function registerServiceWorker() {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
+    });
+
+    function getAllPositions() {
+      const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
+      return [...POSITIONS_31, ...custom];
     }
 
     function updateDateDisplay() {
@@ -408,7 +528,7 @@
       const options = { weekday: 'long', day: 'numeric', month: 'long' };
       document.getElementById('todayDateStr').innerText = now.toLocaleDateString('pl-PL', options);
       
-      const label = currentDateOffset === 0 ? "Dzisiaj" : (currentDateOffset === 1 ? "Jutro" : (currentDateOffset === -1 ? "Wczoraj" : now.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })));
+      const label = currentDateOffset === 0 ? "Dzisiaj (Dzień " + now.getDate() + ")" : (currentDateOffset === 1 ? "Jutro" : (currentDateOffset === -1 ? "Wczoraj" : now.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })));
       document.getElementById('currentCardDate').innerText = label;
     }
 
@@ -422,55 +542,51 @@
       const allPos = getAllPositions();
       const baseDate = new Date();
       baseDate.setDate(baseDate.getDate() + offset);
-      // Stabilny hash dnia
-      const dayHash = Math.abs(Math.sin(baseDate.getFullYear() * 1000 + (baseDate.getMonth() + 1) * 31 + baseDate.getDate()));
-      const index = Math.floor(dayHash * allPos.length) % allPos.length;
+      // Pobieramy pozycję bezpośrednio odpowiadającą dniowi miesiąca (1 do 31)
+      const dayOfMonth = baseDate.getDate();
+      const index = (dayOfMonth - 1) % allPos.length;
       return allPos[index];
-    }
-
-    function getAllPositions() {
-      const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
-      return [...POSITIONS, ...custom];
     }
 
     function renderDailyCard() {
       const pos = getPositionForDay(currentDateOffset);
       const container = document.getElementById('dailyCardContainer');
+      if (!pos) return;
+
       const isFav = checkIfFavorite(pos.id);
 
       container.innerHTML = `
         <div class="relative p-6 bg-gradient-to-b from-slate-900/60 to-brand-card">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase tracking-wider">${pos.level}</span>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase tracking-wider">${pos.level} • Poz. #${pos.id}</span>
             <button onclick="toggleFavorite(${pos.id})" class="p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 active:scale-90 transition">
               <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'fill-brand-accent text-brand-accent' : 'text-slate-400'}"></i>
             </button>
           </div>
 
-          <!-- Grafika Line Art -->
           <div class="py-2 flex items-center justify-center">
-            ${pos.art || defaultArt()}
+            ${generateIllustration(pos.poseType)}
           </div>
 
           <div class="text-center mt-3">
             <h3 class="text-xl font-bold text-white tracking-tight">${pos.name}</h3>
-            <p class="text-xs text-brand-accent font-medium mt-0.5">${pos.vibe || 'Bliskość & Relaks'}</p>
+            <p class="text-xs text-brand-accent font-medium mt-0.5">${pos.vibe || 'Bliskość & Spokój'}</p>
           </div>
         </div>
 
-        <div class="p-5 space-y-4 bg-brand-card border-t border-slate-800/80">
+        <div class="p-5 space-y-4 bg-brand-card border-t border-slate-800">
           <div>
             <h4 class="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5 font-bold">
-              <i data-lucide="smile" class="w-3.5 h-3.5 text-amber-400"></i> Okiem z przymrużeniem oka:
+              <i data-lucide="smile" class="w-3.5 h-3.5 text-amber-400"></i> Z przymrużeniem oka:
             </h4>
-            <p class="text-xs text-slate-200 mt-1.5 leading-relaxed bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+            <p class="text-xs text-slate-200 mt-1.5 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
               ${pos.humor}
             </p>
           </div>
 
           <div>
             <h4 class="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1.5 font-bold">
-              <i data-lucide="compass" class="w-3.5 h-3.5 text-brand-500"></i> Jak wykonać (Krok po kroku):
+              <i data-lucide="compass" class="w-3.5 h-3.5 text-brand-500"></i> Jak wykonać (Anatomia i ułożenie):
             </h4>
             <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
               ${pos.howTo}
@@ -479,24 +595,15 @@
 
           <div class="bg-brand-500/10 border border-brand-500/20 p-3 rounded-xl">
             <p class="text-[11px] text-brand-500 font-semibold flex items-center gap-1.5">
-              <i data-lucide="award" class="w-3.5 h-3.5"></i> Dlaczego warto:
+              <i data-lucide="award" class="w-3.5 h-3.5"></i> Ergonomia i korzyść:
             </p>
-            <p class="text-xs text-slate-300 mt-0.5">${pos.benefit || 'Wspiera wzajemne zaufanie i odprężenie.'}</p>
+            <p class="text-xs text-slate-300 mt-0.5">${pos.benefit || 'Wspiera zaufanie i naturalny kąt podparcia.'}</p>
           </div>
         </div>
       `;
       lucide.createIcons();
     }
 
-    function defaultArt() {
-      return `<svg viewBox="0 0 200 120" class="w-full h-36 stroke-brand-500 fill-none stroke-[2.5] stroke-linecap-round mx-auto">
-        <circle cx="70" cy="50" r="12" class="stroke-brand-accent"/>
-        <path d="M70 65 Q100 90 130 65"/>
-        <circle cx="130" cy="50" r="12"/>
-      </svg>`;
-    }
-
-    // TABS SWITCHING
     function switchTab(tabId) {
       ['daily', 'catalog', 'dice', 'edu', 'custom'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
@@ -509,7 +616,6 @@
       lucide.createIcons();
     }
 
-    // KATALOG
     function setFilter(filter) {
       activeFilter = filter;
       document.querySelectorAll('.cat-pill').forEach(b => {
@@ -530,16 +636,16 @@
         return matchesCat && matchesQuery;
       });
 
-      if (filtered.length === 0) {
-        grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">Brak wyników wyszukiwania.</p>`;
+      if (!filtered.length) {
+        grid.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">Brak wyników.</p>`;
         return;
       }
 
       grid.innerHTML = filtered.map(p => `
-        <div class="bg-brand-card border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition">
+        <div class="bg-brand-card border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between gap-3 hover:border-slate-700 transition">
           <div class="space-y-1">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] font-mono text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-md">${p.level}</span>
+              <span class="text-[10px] font-mono text-brand-500 bg-brand-500/10 px-2 py-0.5 rounded-md">${p.level} • Dzień ${p.id}</span>
               <h4 class="text-sm font-bold text-white">${p.name}</h4>
             </div>
             <p class="text-xs text-slate-400 line-clamp-1">${p.humor}</p>
@@ -556,26 +662,25 @@
       const pos = getAllPositions().find(p => p.id === id);
       if (!pos) return;
       switchTab('daily');
+      document.getElementById('currentCardDate').innerText = "Podgląd pozycji #" + pos.id;
       const container = document.getElementById('dailyCardContainer');
-      document.getElementById('currentCardDate').innerText = "Podgląd";
       container.innerHTML = `
         <div class="p-6 bg-gradient-to-b from-slate-900/60 to-brand-card">
-          <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase">${pos.level}</span>
-          <div class="py-2 flex items-center justify-center">${pos.art || defaultArt()}</div>
+          <span class="text-[11px] font-semibold text-brand-500 bg-brand-500/10 px-3 py-1 rounded-full uppercase">${pos.level} • Poz. #${pos.id}</span>
+          <div class="py-2 flex items-center justify-center">${generateIllustration(pos.poseType)}</div>
           <div class="text-center mt-3">
             <h3 class="text-xl font-bold text-white">${pos.name}</h3>
             <p class="text-xs text-brand-accent mt-0.5">${pos.vibe || ''}</p>
           </div>
         </div>
         <div class="p-5 space-y-3 bg-brand-card border-t border-slate-800">
-          <p class="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800">${pos.humor}</p>
+          <p class="text-xs text-slate-200 bg-slate-900/60 p-3 rounded-xl border border-slate-800">${pos.humor}</p>
           <p class="text-xs text-slate-300 leading-relaxed">${pos.howTo}</p>
         </div>
       `;
       lucide.createIcons();
     }
 
-    // KOSTKA PRZEZNACZENIA
     function rollTheDice() {
       const box = document.getElementById('diceDisplay');
       box.classList.add('shake-anim');
@@ -585,11 +690,10 @@
         const allPos = getAllPositions();
         const rand = allPos[Math.floor(Math.random() * allPos.length)];
         document.getElementById('diceTitle').innerText = rand.name;
-        document.getElementById('diceDesc').innerText = `${rand.level} • ${rand.humor}`;
-      }, 500);
+        document.getElementById('diceDesc').innerText = `${rand.level} • Dzień ${rand.id}: ${rand.humor}`;
+      }, 450);
     }
 
-    // CUSTOM POSITIONS / LOCALSTORAGE
     function toggleCustomForm() {
       document.getElementById('customFormContainer').classList.toggle('hidden');
     }
@@ -601,22 +705,20 @@
       const level = document.getElementById('custDiff').value;
 
       if (!name || !howTo) {
-        alert("Podaj co najmniej nazwę i sposób wykonania!");
+        alert("Wpisz przynajmniej nazwę i sposób wykonania!");
         return;
       }
 
       const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
-      const newPos = {
+      custom.push({
         id: Date.now(),
         name,
-        humor: humor || "Pozycja stworzona według Waszego autorskiego patentu.",
+        humor: humor || "Własny autorski pomysł.",
         howTo,
         level,
         vibe: "Autorska",
-        art: defaultArt()
-      };
-
-      custom.push(newPos);
+        poseType: "spooning"
+      });
       localStorage.setItem('kama_custom_positions', JSON.stringify(custom));
 
       document.getElementById('custName').value = '';
@@ -630,12 +732,10 @@
     function renderCustomPositions() {
       const custom = JSON.parse(localStorage.getItem('kama_custom_positions') || '[]');
       const list = document.getElementById('customPositionsList');
-
-      if (custom.length === 0) {
-        list.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nie dodaliście jeszcze własnych pozycji.</p>`;
+      if (!custom.length) {
+        list.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Brak własnych pozycji.</p>`;
         return;
       }
-
       list.innerHTML = custom.map(p => `
         <div class="bg-brand-card border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
           <div>
@@ -658,7 +758,6 @@
       renderCatalog();
     }
 
-    // ULUBIONE
     function checkIfFavorite(id) {
       const favs = JSON.parse(localStorage.getItem('kama_favs') || '[]');
       return favs.includes(id);
@@ -666,16 +765,11 @@
 
     function toggleFavorite(id) {
       let favs = JSON.parse(localStorage.getItem('kama_favs') || '[]');
-      if (favs.includes(id)) {
-        favs = favs.filter(f => f !== id);
-      } else {
-        favs.push(id);
-      }
+      favs = favs.includes(id) ? favs.filter(f => f !== id) : [...favs, id];
       localStorage.setItem('kama_favs', JSON.stringify(favs));
       renderDailyCard();
     }
 
-    // MODAL iOS
     function openInstallModal() {
       document.getElementById('iosInstallModal').classList.remove('hidden');
     }
