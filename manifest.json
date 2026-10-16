@@ -1,15 +1,15 @@
 {
   "name": "KamaDziennie - Edukacja & Bliskość",
   "short_name": "KamaDziennie",
-  "description": "Nowoczesna, edukacyjna aplikacja z pozycjami intymnymi i dawką humoru.",
+  "description": "Nowoczesna, edukacyjna aplikacja z 31 pozycjami intymnymi i dawką humoru.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0d0f17",
-  "theme_color": "#0d0f17",
+  "background_color": "#0b0d14",
+  "theme_color": "#0b0d14",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><path d='M50 32 C35 15, 15 32, 50 72 C85 32, 65 15, 50 32 Z' fill='%23ffffff'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236366f1'/><path d='M50 32 C35 15, 15 32, 50 72 C85 32, 65 15, 50 32 Z' fill='%23ffffff'/></svg>",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml"
     }
